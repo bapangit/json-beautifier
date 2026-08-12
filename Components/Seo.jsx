@@ -1,8 +1,11 @@
 import Head from "next/head";
+import {
+  OG_IMAGE,
+  SITE_NAME,
+  SITE_URL,
+} from "../app/seo";
 
-const SITE_NAME = "JSON Prettier";
-const SITE_URL = "https://jsonprettyview.org";
-const DEFAULT_IMAGE = `${SITE_URL}/logo512.png`;
+const DEFAULT_IMAGE = `${SITE_URL}${OG_IMAGE}`;
 
 function Seo({
   title,

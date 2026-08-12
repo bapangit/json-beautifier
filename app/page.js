@@ -24,7 +24,7 @@ import SavedTabData from "../Components/CustomStates/SavedTabData";
 import { LuMenu } from "react-icons/lu";
 import { MdClose } from "react-icons/md";
 import { IoMdMoon } from "react-icons/io";
-import Seo, { SITE_NAME, SITE_URL } from "../Components/Seo";
+import { HOME_JSON_LD } from "./seo";
 
 const headerContainerHeight = 70;
 const footerContainerHeight = 104;
@@ -61,6 +61,11 @@ const HomeSeoSection = styled.section`
   h3 {
     margin: 24px 0 8px;
     font-size: 20px;
+  }
+
+  h4 {
+    margin: 18px 0 6px;
+    font-size: 18px;
   }
 
   p,
@@ -170,76 +175,6 @@ const BottomContainer = styled.div`
 function App() {
   const { sId } = useParams();
   const { tabData, save, getTabData, deleteTab } = SavedTabData();
-  const seoTitle = sId
-    ? "Shared JSON Viewer | JSON Prettier"
-    : "JSON Formatter & Pretty Print Online | JSON Viewer";
-  const seoDescription = sId
-    ? "View a shared JSON payload in a clean formatter and editor."
-    : "Format, prettify, validate, and inspect JSON online with a split-view JSON editor and viewer.";
-  const seoKeywords =
-    "json formatter, json pretty print, json viewer, json beautifier, json parser, format json online, validate json";
-  const seoPath = sId ? `/${sId}` : "/";
-  const seoStructuredData = sId
-    ? {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        name: seoTitle,
-        description: seoDescription,
-        url: `${SITE_URL}${seoPath}`,
-      }
-    : [
-        {
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          name: SITE_NAME,
-          url: SITE_URL,
-          description: seoDescription,
-        },
-        {
-          "@context": "https://schema.org",
-          "@type": "SoftwareApplication",
-          name: SITE_NAME,
-          url: SITE_URL,
-          applicationCategory: "DeveloperApplication",
-          operatingSystem: "Any",
-          description: seoDescription,
-          offers: {
-            "@type": "Offer",
-            price: "0",
-            priceCurrency: "USD",
-          },
-        },
-        {
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          mainEntity: [
-            {
-              "@type": "Question",
-              name: "What does JSON Prettier do?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: "It formats raw JSON into readable, indented output and lets you inspect the result in a split-view editor.",
-              },
-            },
-            {
-              "@type": "Question",
-              name: "Can I validate JSON before using it in an API or app?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: "Yes. Invalid JSON will fail to parse, which makes it easier to catch malformed payloads before you use them elsewhere.",
-              },
-            },
-            {
-              "@type": "Question",
-              name: "Is the JSON formatter free to use?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: "Yes. JSON Prettier is available as a free online JSON formatter and viewer.",
-              },
-            },
-          ],
-        },
-      ];
 
   const [editorData, setEditorData] = useState("");
 
@@ -539,19 +474,15 @@ function App() {
 
   return (
     <>
-      <Seo
-        title={seoTitle}
-        description={seoDescription}
-        keywords={seoKeywords}
-        path={seoPath}
-        noindex={Boolean(sId)}
-        structuredData={seoStructuredData}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_JSON_LD) }}
       />
       <main style={{ minHeight: "100vh", width: "100%", overflowX: "hidden" }}>
         {
           <HeaderContainer $show={containerViewMode === "H"}>
             <h1 style={{ fontSize: "24px", fontWeight: "500" }}>
-              JSON Viewer{" "}
+              JSON Beautifier{" "}
             </h1>
             {Object.keys(tabData).length ? null : (
               <div
@@ -999,10 +930,10 @@ function App() {
         {!sId && (
           <HomeSeoSection>
             <div className="content">
-              <h2>Online JSON formatter, viewer, and pretty printer</h2>
+              <h2>Online JSON beautifier, formatter, viewer, and validator</h2>
               <p>
-                JSON Prettier helps you format JSON, inspect nested objects, and
-                clean up API payloads in a browser-based split editor. Paste
+                JSON Beautifier helps you format JSON, inspect nested objects,
+                and clean up API payloads in a browser-based split editor. Paste
                 minified JSON on the left and review readable output on the
                 right.
               </p>
@@ -1012,7 +943,7 @@ function App() {
                 into readable text during development.
               </p>
 
-              <h3>Why developers use this JSON viewer</h3>
+              <h3>Why developers use JSON Beautifier</h3>
               <ul>
                 <li>Pretty print raw JSON into a readable structure.</li>
                 <li>Inspect nested arrays and objects side by side.</li>
@@ -1023,14 +954,21 @@ function App() {
               </ul>
 
               <h3>Common questions</h3>
+              <h4>What does JSON Beautifier do?</h4>
               <p>
-                Use this tool when you need a fast JSON formatter for API
-                testing, debugging, or quick validation before moving data into
-                your application. For more context about the format itself, see{" "}
-                
+                JSON Beautifier formats raw JSON into readable, indented output
+                and lets you inspect it in a split-view editor.
               </p>
-
-              
+              <h4>Can I validate JSON before using it in an API or app?</h4>
+              <p>
+                Yes. Invalid JSON fails to parse, which makes malformed payloads
+                easier to catch before you use them elsewhere.
+              </p>
+              <h4>Is JSON Beautifier free to use?</h4>
+              <p>
+                Yes. JSON Beautifier is a free online JSON formatter,
+                beautifier, validator, and viewer.
+              </p>
             </div>
           </HomeSeoSection>
         )}
