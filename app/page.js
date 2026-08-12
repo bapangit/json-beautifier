@@ -1,6 +1,6 @@
 "use client"
 import Editor from "@monaco-editor/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { css, styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Button from "../Components/Buttons/Button";
@@ -29,6 +29,8 @@ import Link from "next/link";
 
 const headerContainerHeight = 70;
 const footerContainerHeight = 104;
+const useBrowserLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 const HeaderContainer = styled.div`
   width: 100%;
@@ -202,6 +204,8 @@ function App() {
   const [shareId, setShareId] = useState("");
 
   const [containerViewMode, setContainerViewMode] = useState("H");
+  const [isContainerViewModeReady, setIsContainerViewModeReady] =
+    useState(false);
 
   const updateContainerMode = (mode) => {
     setContainerViewMode(mode);
@@ -210,12 +214,14 @@ function App() {
 
   const [darkTheme, setDarkTheme] = useState(false);
 
-  useEffect(() => {
+  useBrowserLayoutEffect(() => {
     if (!sId) {
       setEditorData(getHistory());
     }
-    setContainerViewMode(getContainerMode());
+    const savedContainerMode = getContainerMode();
+    setContainerViewMode(savedContainerMode === "B" ? "B" : "H");
     setDarkTheme(getMode());
+    setIsContainerViewModeReady(true);
   }, [sId]);
 
   useEffect(() => {
@@ -479,7 +485,14 @@ function App() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_JSON_LD) }}
       />
-      <main style={{ minHeight: "100vh", width: "100%", overflowX: "hidden" }}>
+      <main
+        style={{
+          minHeight: "100vh",
+          width: "100%",
+          overflowX: "hidden",
+          visibility: isContainerViewModeReady ? "visible" : "hidden",
+        }}
+      >
         {
           <HeaderContainer $show={containerViewMode === "H"}>
             <h1 style={{ fontSize: "24px", fontWeight: "500" }}>
@@ -552,8 +565,8 @@ function App() {
                   wordWrap: "on",
                   fontSize: `${fontSize}px`,
                   scrollbar: {
-                    // vertical: "hidden",
-                    handleMouseWheel: true,
+                    handleMouseWheel: false,
+                    alwaysConsumeMouseWheel: false,
                   },
                   renderLineHighlight: "none",
                   isWholeLine: true,
@@ -578,8 +591,8 @@ function App() {
                   wordWrap: "on",
                   fontSize: `${fontSize}px`,
                   scrollbar: {
-                    // vertical: "hidden",
-                    handleMouseWheel: true,
+                    handleMouseWheel: false,
+                    alwaysConsumeMouseWheel: false,
                   },
                   renderLineHighlight: "none",
                   isWholeLine: true,
@@ -945,6 +958,7 @@ function App() {
               </p>
               <div className="link-row">
                 <Link href="/about">About JSON Beautifier</Link>
+                <Link href="/contact">Contact Us</Link>
               </div>
 
               <h3>Why developers use JSON Beautifier</h3>
