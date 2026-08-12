@@ -3,12 +3,12 @@
   --foreground: #171717;
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
-}
+} */
 
 html {
   height: 100%;
@@ -18,6 +18,8 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  overflow-y: hidden;
+  height: 100%;
 }
 
 body {
@@ -29,6 +31,21 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}
+
+main {
+  min-height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+main::-webkit-scrollbar {
+  display: none;
 }
 
 * {
@@ -46,4 +63,97 @@ a {
   html {
     color-scheme: dark;
   }
+}
+
+/* hide scrollbar in main */
+main {
+  overflow-y: auto;          /* keep scroll */
+
+  /* Firefox */
+  scrollbar-width: none;
+
+  /* IE + Edge */
+  -ms-overflow-style: none;
+}
+
+/* Chrome, Safari */
+main::-webkit-scrollbar {
+  display: none;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
+* {
+  margin: 0px;
+  padding: 0px;
+  box-sizing: border-box;
+}
+
+/* Pane Resizel */
+.Resizer {
+  background: grey;
+  opacity: 0.2;
+  z-index: 1;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  -moz-background-clip: padding;
+  -webkit-background-clip: padding;
+  background-clip: padding-box;
+}
+
+.Resizer:hover {
+  -webkit-transition: all 2s ease;
+  transition: all 2s ease;
+}
+
+
+
+.Resizer.vertical {
+  width: 11px;
+  margin: 0 -5px;
+  border-left: 5px solid rgb(145, 145, 145);
+  border-right: 5px solid darkgray;
+  cursor: col-resize;
+}
+
+.Resizer.vertical:hover {
+  border-left: 5px solid white;
+  border-right: 5px solid white;
+}
+.Resizer.disabled {
+  cursor: not-allowed;
+}
+.Resizer.disabled:hover {
+  border-color: transparent;
+}
+
+.hover-link {
+  cursor: pointer;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Saved Tab Scrollbar */
+#myDivId::-webkit-scrollbar {
+  width: thin;
+  border-radius: 2px;
+  height: 5px;
+  margin: 2px;
+}
+
+#myDivId::-webkit-scrollbar-track {
+  width: thin;
+  border-radius: 2px;
+  height: 4px;
+}
+
+#myDivId::-webkit-scrollbar-thumb {
+  width: thin;
+  background-color: rgba(214, 214, 214, 0.959);
+  border-radius: 2px;
 }
