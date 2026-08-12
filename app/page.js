@@ -25,6 +25,7 @@ import { LuMenu } from "react-icons/lu";
 import { MdClose } from "react-icons/md";
 import { IoMdMoon } from "react-icons/io";
 import { HOME_JSON_LD } from "./seo";
+import Link from "next/link";
 
 const headerContainerHeight = 70;
 const footerContainerHeight = 104;
@@ -942,6 +943,9 @@ function App() {
                 structure before storing data, and turning compressed payloads
                 into readable text during development.
               </p>
+              <div className="link-row">
+                <Link href="/about">About JSON Beautifier</Link>
+              </div>
 
               <h3>Why developers use JSON Beautifier</h3>
               <ul>
