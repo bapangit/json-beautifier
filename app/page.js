@@ -80,24 +80,6 @@ const HeaderContainer = styled.div`
     white-space: nowrap;
   }
 
-  .header-links {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .header-link {
-    color: #000000;
-    text-decoration: none;
-    white-space: nowrap;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
   .bookmark-message {
     flex: 1;
     min-width: 180px;
@@ -113,11 +95,6 @@ const HeaderContainer = styled.div`
   @media (max-width: 760px) {
     gap: 10px;
     padding: 0px 10px;
-
-    .header-links {
-      gap: 8px;
-      font-size: 13px;
-    }
 
     .brand-title {
       font-size: 20px;
@@ -135,11 +112,6 @@ const HeaderContainer = styled.div`
 
     .brand-title {
       font-size: 18px;
-    }
-
-    .header-links {
-      gap: 6px;
-      font-size: 12px;
     }
   }
 `;
@@ -609,13 +581,6 @@ function App() {
           <HeaderContainer $show={containerViewMode === "H"}>
             <div className="brand-nav">
               <h1 className="brand-title">JSON Beautifier </h1>
-              <nav className="header-links" aria-label="Home page links">
-                {HOME_NAV_LINKS.map(({ href, label }) => (
-                  <Link className="header-link" href={href} key={href}>
-                    {label}
-                  </Link>
-                ))}
-              </nav>
             </div>
             {Object.keys(tabData).length ? null : (
               <div className="bookmark-message">
