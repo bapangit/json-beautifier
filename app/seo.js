@@ -1,4 +1,5 @@
-const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://jsonprettyview.org";
+const rawSiteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.json-beautifier.net";
 
 export const SITE_URL = rawSiteUrl.replace(/\/+$/, "");
 export const SITE_NAME = "JSON Beautifier";
