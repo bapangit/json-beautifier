@@ -14,7 +14,6 @@
     "react": "19.2.8",
     "react-copy-to-clipboard": "^5.1.0",
     "react-dom": "19.2.8",
-    "react-helmet": "^6.1.0",
     "react-icons": "^4.9.0",
     "react-split-pane": "^0.1.92",
     "react-switch": "^7.1.0",
