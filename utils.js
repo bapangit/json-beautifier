@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const hasLocalStorage = () =>
   typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -83,15 +83,11 @@ function RejectCounter(mainReject, max) {
 }
 
 export const TrimValueState = () => {
-  const [value, setValue] = useState('"');
-
-  useEffect(() => {
-    if (!hasLocalStorage()) return;
+  const [value, setValue] = useState(() => {
+    if (!hasLocalStorage()) return '"';
     const stored = localStorage.getItem("trimValue");
-    if (stored) {
-      setValue(stored);
-    }
-  }, []);
+    return stored || '"';
+  });
 
   const setTrimValue = (value) => {
     setValue(value);

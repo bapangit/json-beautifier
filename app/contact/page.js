@@ -8,7 +8,7 @@ import {
 import styles from "./page.module.css";
 
 const CONTACT_PATH = "/contact";
-const CONTACT_EMAIL = "contact@jsonprettyview.org";
+const CONTACT_EMAIL = "cmandal97531@gmail.com";
 const CONTACT_TITLE = "Contact JSON Beautifier | Support & Feedback";
 const CONTACT_DESCRIPTION =
   "Contact JSON Beautifier for feedback, bug reports, feature requests, and questions about the online JSON formatter.";

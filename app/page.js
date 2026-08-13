@@ -29,8 +29,29 @@ import Link from "next/link";
 
 const headerContainerHeight = 70;
 const footerContainerHeight = 104;
+const HOME_NAV_LINKS = [
+  { href: "/about", label: "About Us" },
+  { href: "/contact", label: "Contact" },
+  { href: "/privacy-policy", label: "Privacy Policy" },
+];
 const useBrowserLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+const formatJsonData = (data) => JSON.stringify(JSON.parse(data), null, 2);
+
+const trimEditorData = (data, trimValue) => {
+  const trimmedData = data?.trim() || "";
+  if (
+    trimValue &&
+    trimmedData.substring(
+      trimmedData.length - trimValue.length,
+      trimmedData.length,
+    ) === trimValue
+  ) {
+    return trimmedData.substring(0, trimmedData.length - trimValue.length);
+  }
+  return trimmedData;
+};
 
 const HeaderContainer = styled.div`
   width: 100%;
@@ -44,6 +65,83 @@ const HeaderContainer = styled.div`
   background-color: darkgrey;
   color: #000000;
   z-index: 100;
+
+  .brand-nav {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-width: 0;
+  }
+
+  .brand-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .header-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .header-link {
+    color: #000000;
+    text-decoration: none;
+    white-space: nowrap;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .bookmark-message {
+    flex: 1;
+    min-width: 180px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .menu-toggle {
+    cursor: pointer;
+  }
+
+  @media (max-width: 760px) {
+    gap: 10px;
+    padding: 0px 10px;
+
+    .header-links {
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .brand-title {
+      font-size: 20px;
+    }
+
+    .bookmark-message {
+      display: none;
+    }
+  }
+
+  @media (max-width: 460px) {
+    .brand-nav {
+      gap: 8px;
+    }
+
+    .brand-title {
+      font-size: 18px;
+    }
+
+    .header-links {
+      gap: 6px;
+      font-size: 12px;
+    }
+  }
 `;
 
 const HomeSeoSection = styled.section`
@@ -191,7 +289,7 @@ function App() {
     }
   }, [timestampHovered]);
 
-  const [resultData, setResultData] = useState();
+  const [resultData, setResultData] = useState("");
 
   const [compressionType, setCompressionType] = useState("text");
 
@@ -200,8 +298,7 @@ function App() {
 
   const [trimValue, setTrimValue] = TrimValueState();
   const [findValue, setFindValue] = useState("");
-
-  const [shareId, setShareId] = useState("");
+  const [inputLanguage, setInputLanguage] = useState("");
 
   const [containerViewMode, setContainerViewMode] = useState("H");
   const [isContainerViewModeReady, setIsContainerViewModeReady] =
@@ -216,7 +313,21 @@ function App() {
 
   useBrowserLayoutEffect(() => {
     if (!sId) {
-      setEditorData(getHistory());
+      const savedEditorData = getHistory();
+      setEditorData(savedEditorData);
+      const trimmedSavedEditorData = trimEditorData(savedEditorData, trimValue);
+
+      if (trimmedSavedEditorData) {
+        try {
+          setResultData(formatJsonData(trimmedSavedEditorData));
+          setInputLanguage("json");
+          setCompressionType("json");
+        } catch {
+          setResultData("");
+        }
+      } else {
+        setResultData("");
+      }
     }
     const savedContainerMode = getContainerMode();
     setContainerViewMode(savedContainerMode === "B" ? "B" : "H");
@@ -265,6 +376,18 @@ function App() {
     setMonaco(monaco);
   };
 
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    const output = resultData || "";
+    if (editor.getValue() !== output) {
+      editor.setValue(output);
+    }
+    editor.layout();
+  }, [editor, resultData]);
+
   const setTheme = (isDark) => {
     if (monaco) {
       if (isDark) {
@@ -277,27 +400,18 @@ function App() {
     }
   };
 
-  const [result, setResult] = useState();
-
   const handleEval = (input) => {
     try {
-      const evaluatedResult = eval(input);
+      const evaluatedResult = Function(`"use strict"; return (${input});`)();
+      setResultData(JSON.stringify(evaluatedResult, null, 2));
     } catch (error) {
       throw new Error();
     }
   };
 
-  useEffect(() => {
-    if (result) {
-      setResultData(() => JSON.stringify(result, null, 2));
-    }
-  }, [result]);
-
-  const [inputLanguage, setInputLanguage] = useState("");
-
   const prettifyOnChange = (data, isDecompressed) => {
     try {
-      setResultData(JSON.stringify(JSON.parse(data), null, 2));
+      setResultData(formatJsonData(data));
 
       if (!isDecompressed) {
         setInputLanguage("json");
@@ -353,7 +467,7 @@ function App() {
       if (res.type) {
         setCompressionType(res.type);
       } else {
-        handleEval("setResult(" + compressedData + ")");
+        handleEval(compressedData);
       }
     } catch {
       // console.log("failed decompress");
@@ -371,46 +485,43 @@ function App() {
     }
   };
 
+  const trim = () => {
+    return trimEditorData(editorData, trimValue);
+  };
+
   useEffect(() => {
+    if (isContainerViewModeReady && !sId) {
+      saveHistory(editorData);
+    }
+  }, [editorData, isContainerViewModeReady, sId]);
+
+  useEffect(() => {
+    if (!isContainerViewModeReady) {
+      return;
+    }
+
     const handler = setTimeout(() => {
-      prettifyOnChange(trim(editorData), false);
+      prettifyOnChange(trim(), false);
       if (editorData && isPasting) {
         setNewData(editorData);
         setIsPasting(false);
-      }
-
-      if (!sId) {
-        saveHistory(editorData);
       }
     }, [500]);
 
     return () => {
       clearTimeout(handler);
     };
-  }, [editorData]);
-
-  const trim = () => {
-    editorData?.trim();
-    if (trimValue) {
-      if (
-        editorData?.substring(
-          editorData.length - trimValue.length,
-          editorData.length,
-        ) === trimValue
-      ) {
-        let str =
-          editorData?.substring(0, editorData.length - trimValue.length) || "";
-        return str;
-      }
-    }
-    return editorData;
-  };
+  }, [editorData, isContainerViewModeReady]);
 
   const onClickTrim = () => {
-    prettifyOnChange(trim(editorData), false);
+    prettifyOnChange(trim(), false);
   };
 
   useEffect(() => {
+    if (!isContainerViewModeReady) {
+      return;
+    }
+
     const handler = setTimeout(() => {
       onClickTrim();
     }, [500]);
@@ -418,10 +529,11 @@ function App() {
     return () => {
       clearTimeout(handler);
     };
-  }, [trimValue]);
+  }, [trimValue, isContainerViewModeReady]);
 
   const clear = () => {
     setEditorData("");
+    setResultData("");
   };
 
   
@@ -495,23 +607,24 @@ function App() {
       >
         {
           <HeaderContainer $show={containerViewMode === "H"}>
-            <h1 style={{ fontSize: "24px", fontWeight: "500" }}>
-              JSON Beautifier{" "}
-            </h1>
+            <div className="brand-nav">
+              <h1 className="brand-title">JSON Beautifier </h1>
+              <nav className="header-links" aria-label="Home page links">
+                {HOME_NAV_LINKS.map(({ href, label }) => (
+                  <Link className="header-link" href={href} key={href}>
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
             {Object.keys(tabData).length ? null : (
-              <div
-                style={{
-                  marginLeft: "-310px",
-                  fontSize: "15px",
-                  fontWeight: "500",
-                }}
-              >
+              <div className="bookmark-message">
                 Kindly save to bookmarks bar for future access to this tool.
               </div>
             )}
             <div>
               <span
-                style={{ cursor: "pointer" }}
+                className="menu-toggle"
                 onClick={() => updateContainerMode("B")}
               >
                 <LuMenu />
@@ -545,7 +658,8 @@ function App() {
                     : footerContainerHeight
                 }px)`}
                 theme="vs-dark"
-                value={tempEditorData || editorData}
+                path="file:///json-beautifier/input.json"
+                value={tempEditorData || editorData || ""}
                 onMount={(editor) => {
                   editor.focus();
                   editor.onKeyDown((event) => {
@@ -557,7 +671,7 @@ function App() {
                 }}
                 language={inputLanguage}
                 onChange={(data) => {
-                  setEditorData(data);
+                  setEditorData(data || "");
                 }}
                 options={{
                   minimap: { enabled: false },
@@ -565,8 +679,8 @@ function App() {
                   wordWrap: "on",
                   fontSize: `${fontSize}px`,
                   scrollbar: {
-                    handleMouseWheel: false,
-                    alwaysConsumeMouseWheel: false,
+                    handleMouseWheel: true,
+                    alwaysConsumeMouseWheel: true,
                   },
                   renderLineHighlight: "none",
                   isWholeLine: true,
@@ -582,7 +696,8 @@ function App() {
                 }px)`}
                 width="100%"
                 theme="vs-dark"
-                value={resultData}
+                path="file:///json-beautifier/result.json"
+                value={resultData || ""}
                 onMount={onMountResultEditor}
                 language="json"
                 options={{
@@ -591,8 +706,8 @@ function App() {
                   wordWrap: "on",
                   fontSize: `${fontSize}px`,
                   scrollbar: {
-                    handleMouseWheel: false,
-                    alwaysConsumeMouseWheel: false,
+                    handleMouseWheel: true,
+                    alwaysConsumeMouseWheel: true,
                   },
                   renderLineHighlight: "none",
                   isWholeLine: true,
@@ -931,7 +1046,11 @@ function App() {
                     fontSize: "10px",
                   }}
                 >
-                  
+                  {HOME_NAV_LINKS.map(({ href, label }) => (
+                    <Link className="menu-item" href={href} key={href}>
+                      {label}
+                    </Link>
+                  ))}
                 </div>
               </div>
             )}
@@ -957,8 +1076,11 @@ function App() {
                 into readable text during development.
               </p>
               <div className="link-row">
-                <Link href="/about">About JSON Beautifier</Link>
-                <Link href="/contact">Contact Us</Link>
+                {HOME_NAV_LINKS.map(({ href, label }) => (
+                  <Link href={href} key={href}>
+                    {label}
+                  </Link>
+                ))}
               </div>
 
               <h3>Why developers use JSON Beautifier</h3>
