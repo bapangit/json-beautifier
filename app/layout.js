@@ -24,14 +24,23 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
+
   title: {
     default: SITE_TITLE,
     template: `%s | ${SITE_NAME}`,
   },
+
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   keywords: SITE_KEYWORDS,
-  authors: [{ name: SITE_NAME, url: SITE_URL }],
+
+  authors: [
+    {
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+  ],
+
   creator: SITE_NAME,
   publisher: SITE_NAME,
   category: "technology",
@@ -43,6 +52,7 @@ export const metadata = {
   robots: {
     index: true,
     follow: true,
+
     googleBot: {
       index: true,
       follow: true,
@@ -59,6 +69,7 @@ export const metadata = {
     siteName: SITE_NAME,
     locale: "en_US",
     type: "website",
+
     images: [
       {
         url: OG_IMAGE,
@@ -73,6 +84,7 @@ export const metadata = {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
+
     images: [
       {
         url: TWITTER_IMAGE,
@@ -92,21 +104,34 @@ export const metadata = {
 
 export const viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#252525" },
+    {
+      media: "(prefers-color-scheme: light)",
+      color: "#ffffff",
+    },
+    {
+      media: "(prefers-color-scheme: dark)",
+      color: "#252525",
+    },
   ],
+
   colorScheme: "light dark",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+    >
       <body>
         <StyledComponentsRegistry>
           {children}
         </StyledComponentsRegistry>
 
-        {/* Google Analytics */}
+        {/* =====================================================
+            Google Analytics - G-P7FC4V9CYJ
+        ====================================================== */}
+
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-P7FC4V9CYJ"
           strategy="afterInteractive"
@@ -122,19 +147,35 @@ export default function RootLayout({ children }) {
           `}
         </Script>
 
-        {/* Google Ads / Google Tag */}
+        {/* =====================================================
+            Google Tag - G-F8X84Y931X
+        ====================================================== */}
+
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-F8X84Y931X"
           strategy="afterInteractive"
         />
 
-        <Script id="google-ads-tag" strategy="afterInteractive">
+        <Script id="google-tag" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
 
             gtag('config', 'G-F8X84Y931X');
+          `}
+        </Script>
+
+        {/* =====================================================
+            Google Ads Conversion Event
+            AW-578050842/IJFOCP7T0M0YEJq20ZMC
+        ====================================================== */}
+
+        <Script id="google-ads-conversion" strategy="afterInteractive">
+          {`
+            gtag('event', 'conversion', {
+              'send_to': 'AW-578050842/IJFOCP7T0M0YEJq20ZMC'
+            });
           `}
         </Script>
       </body>
