@@ -119,6 +119,16 @@ export default function RootLayout({ children }) {
             gtag('config', 'G-P7FC4V9CYJ');
           `}
         </Script>
+
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-F8X84Y931X"
+        ></script>
+        <script>
+          window.dataLayer = window.dataLayer || []; function gtag()
+          {dataLayer.push(arguments)}
+          gtag('js', new Date()); gtag('config', 'G-F8X84Y931X');
+        </script>
       </body>
     </html>
   );
