@@ -102,7 +102,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
-        <StyledComponentsRegistry>{children}</StyledComponentsRegistry>
+        <StyledComponentsRegistry>
+          {children}
+        </StyledComponentsRegistry>
 
         {/* Google Analytics */}
         <Script
@@ -120,15 +122,21 @@ export default function RootLayout({ children }) {
           `}
         </Script>
 
-        <script
-          async
+        {/* Google Ads / Google Tag */}
+        <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-F8X84Y931X"
-        ></script>
-        <script>
-          window.dataLayer = window.dataLayer || []; function gtag()
-          {dataLayer.push(arguments)}
-          gtag('js', new Date()); gtag('config', 'G-F8X84Y931X');
-        </script>
+          strategy="afterInteractive"
+        />
+
+        <Script id="google-ads-tag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-F8X84Y931X');
+          `}
+        </Script>
       </body>
     </html>
   );
