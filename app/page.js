@@ -26,6 +26,7 @@ import { MdClose } from "react-icons/md";
 import { IoMdMoon } from "react-icons/io";
 import { HOME_JSON_LD } from "./seo";
 import Link from "next/link";
+import BookmarkButton from "@/Components/BookmarkButton";
 
 const headerContainerHeight = 70;
 const footerContainerHeight = 104;
@@ -583,10 +584,24 @@ function App() {
               <h1 className="brand-title">JSON Beautifier </h1>
             </div>
             {Object.keys(tabData).length ? null : (
+              <>
               <div className="bookmark-message">
                 Kindly save to bookmarks bar for future access to this tool.
+                
               </div>
+              <button
+  onClick={() => {
+    const isMac = navigator.platform.toUpperCase().includes("MAC");
+    alert(
+      `To bookmark this page, press ${isMac ? "⌘ + D" : "Ctrl + D"}`
+    );
+  }}
+>
+  ⭐ Add to Bookmarks
+</button>
+              </>
             )}
+            
             <div>
               <span
                 className="menu-toggle"
