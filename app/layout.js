@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import StyledComponentsRegistry from "./lib/registry";
 import {
@@ -21,7 +22,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-/** @type {import("next").Metadata} */
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -35,9 +35,11 @@ export const metadata = {
   creator: SITE_NAME,
   publisher: SITE_NAME,
   category: "technology",
+
   alternates: {
     canonical: "/",
   },
+
   robots: {
     index: true,
     follow: true,
@@ -49,6 +51,7 @@ export const metadata = {
       "max-snippet": -1,
     },
   },
+
   openGraph: {
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
@@ -65,6 +68,7 @@ export const metadata = {
       },
     ],
   },
+
   twitter: {
     card: "summary_large_image",
     title: SITE_TITLE,
@@ -76,7 +80,9 @@ export const metadata = {
       },
     ],
   },
+
   manifest: "/manifest.webmanifest",
+
   formatDetection: {
     email: false,
     address: false,
@@ -84,7 +90,6 @@ export const metadata = {
   },
 };
 
-/** @type {import("next").Viewport} */
 export const viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
@@ -98,6 +103,22 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         <StyledComponentsRegistry>{children}</StyledComponentsRegistry>
+
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-P7FC4V9CYJ"
+          strategy="afterInteractive"
+        />
+
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-P7FC4V9CYJ');
+          `}
+        </Script>
       </body>
     </html>
   );

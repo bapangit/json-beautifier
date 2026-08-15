@@ -571,16 +571,6 @@ function App() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_JSON_LD) }}
       />
 
-      
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-P7FC4V9CYJ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments)}
-  gtag('js', new Date());
-
-  gtag('config', 'G-P7FC4V9CYJ');
-</script>
-
       <main
         style={{
           minHeight: "100vh",
