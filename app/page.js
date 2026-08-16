@@ -876,7 +876,7 @@ function App() {
                       style={{
                         color: "lightgray",
                         fontSize: "14px",
-                        marginLeft: "2px",
+                        marginLeft: "48px",
                       }}
                     >
                       Font Size :
@@ -968,8 +968,8 @@ function App() {
                       <div
                         style={{
                           display: "flex",
-                          minWidth: "300px",
-                          maxWidth: "300px",
+                          minWidth: "380px",
+                          maxWidth: "380px",
                           overflowX: "scroll",
                           border: "1px solid grey",
                           padding: "2px",
