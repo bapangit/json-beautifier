@@ -35,7 +35,7 @@ import { IoMdDownload } from "react-icons/io";
 import { LuMoveHorizontal } from "react-icons/lu";
 
 const headerContainerHeight = 70;
-const footerContainerHeight = 104;
+const footerContainerHeight = 110;
 const HOME_NAV_LINKS = [
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact" },
@@ -64,7 +64,7 @@ const HeaderContainer = styled.div`
   width: 100%;
   height: 50px;
   padding: 0px 15px;
-  display: ${(p) => (p.$show ? "flex" : "none")};
+  display: ${(p) => (p.$show ||true ? "flex" : "none")};
   justify-content: space-between;
   gap: 20px;
   align-items: center;
@@ -125,12 +125,13 @@ const HeaderContainer = styled.div`
 
 const HomeSeoSection = styled.section`
   padding: 28px 18px 48px;
-  background: #f3f4f6;
+  background: darkgray;
   color: #111827;
 
   .content {
     max-width: 960px;
     margin: 0 auto;
+    
   }
 
   h2 {
@@ -176,10 +177,10 @@ const TopContainer = styled.div`
   ${(p) => {
     return p.mode === "H"
       ? css`
-          height: calc(100vh - ${headerContainerHeight}px);
+          height: calc(100vh - ${headerContainerHeight+footerContainerHeight-20}px);
         `
       : css`
-          height: calc(100vh - ${footerContainerHeight}px);
+          height: calc(100vh - ${footerContainerHeight+headerContainerHeight-20}px);
         `;
   }}
 `;
@@ -607,12 +608,12 @@ function App() {
             )}
 
             <div>
-              <span
+              {/* <span
                 className="menu-toggle"
                 onClick={() => updateContainerMode("B")}
               >
                 <LuMenu />
-              </span>
+              </span> */}
             </div>
           </HeaderContainer>
         }
@@ -623,10 +624,13 @@ function App() {
             defaultSize="50%"
             split="vertical"
             style={{
+              // height: `calc(100vh - ${
+              //   containerViewMode === "H"
+              //     ? headerContainerHeight
+              //     : footerContainerHeight
+              // }px)`,
               height: `calc(100vh - ${
-                containerViewMode === "H"
-                  ? headerContainerHeight
-                  : footerContainerHeight
+                headerContainerHeight+footerContainerHeight-20
               }px)`,
               width: "100%",
             }}
@@ -636,10 +640,13 @@ function App() {
           >
             <div>
               <Editor
+                // height={`calc(100vh - ${
+                //   containerViewMode === "H"
+                //     ? headerContainerHeight
+                //     : footerContainerHeight
+                // }px)`}
                 height={`calc(100vh - ${
-                  containerViewMode === "H"
-                    ? headerContainerHeight
-                    : footerContainerHeight
+                  headerContainerHeight+footerContainerHeight-20
                 }px)`}
                 theme="vs-dark"
                 path="file:///json-beautifier/input.json"
@@ -673,10 +680,13 @@ function App() {
             </div>
             <div>
               <Editor
+                // height={`calc(100vh - ${
+                //   containerViewMode === "H"
+                //     ? headerContainerHeight
+                //     : footerContainerHeight
+                // }px)`}
                 height={`calc(100vh - ${
-                  containerViewMode === "H"
-                    ? headerContainerHeight
-                    : footerContainerHeight
+                  headerContainerHeight+footerContainerHeight-20
                 }px)`}
                 width="100%"
                 theme="vs-dark"
@@ -715,7 +725,7 @@ function App() {
                 borderTop: "1px solid darkgrey",
               }}
             >
-              <div
+              {/* <div
                 style={{
                   position: "absolute",
                   right: "5px",
@@ -732,7 +742,7 @@ function App() {
                     backgroundColor: "#88888889",
                   }}
                 />
-              </div>
+              </div> */}
 
               <div
                 style={{
@@ -1051,9 +1061,9 @@ function App() {
           </BottomContainer>
         }
 
-        {containerViewMode === "H" && (
+        {/* {containerViewMode === "H" && (
           <div style={{ height: "20px", backgroundColor: "#505050" }}></div>
-        )}
+        )} */}
         {!sId && (
           <HomeSeoSection>
             <div className="content">
