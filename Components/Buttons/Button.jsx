@@ -6,20 +6,48 @@ const Btn = styled.button`
   color: black;
   background-color: #ffffff75;
   padding: 3px 7px;
+  height: 28px;
+  min-height: 28px;
+
   white-space: nowrap;
   font-size: 12px;
   cursor: pointer;
+
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
   ${({ $customStyle }) => $customStyle}
+
   &:hover {
     background-color: #ffffff26;
     color: #b1b1b1;
   }
+
   &:active {
     color: grey;
   }
+
+  .button-icon {
+    width: 14px;
+    height: 14px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+  }
+
+  .button-icon svg {
+    width: 100%;
+    height: 100%;
+  }
 `;
 
-function Button({ title, onClick, style, hintText, ...rest }) {
+function Button({ title, icon, onClick, style, hintText, ...rest }) {
   return (
     <Btn
       $customStyle={style}
@@ -28,7 +56,8 @@ function Button({ title, onClick, style, hintText, ...rest }) {
       onClick={(e) => onClick && onClick(e)}
       {...rest}
     >
-      {`${title}`.toUpperCase()}
+      {icon && <span className="button-icon">{icon}</span>}
+      {title && <span>{`${title}`.toUpperCase()}</span>}
     </Btn>
   );
 }

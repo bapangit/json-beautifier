@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import Editor from "@monaco-editor/react";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { css, styled } from "styled-components";
@@ -27,6 +27,12 @@ import { IoMdMoon } from "react-icons/io";
 import { HOME_JSON_LD } from "./seo";
 import Link from "next/link";
 import BookmarkButton from "@/Components/BookmarkButton";
+import { MdOutlineContentPaste } from "react-icons/md";
+import { AiOutlineDelete } from "react-icons/ai";
+import { IoSearch } from "react-icons/io5";
+import { IoCopyOutline } from "react-icons/io5";
+import { IoMdDownload } from "react-icons/io";
+import { LuMoveHorizontal } from "react-icons/lu";
 
 const headerContainerHeight = 70;
 const footerContainerHeight = 104;
@@ -319,7 +325,6 @@ function App() {
     };
   }, [findValue]);
 
-
   const [isPasting, setIsPasting] = useState(false);
 
   const onMountResultEditor = (editor, monaco) => {
@@ -509,9 +514,6 @@ function App() {
     setResultData("");
   };
 
-  
-
-
   const [copyButtonTitle, setCopyButtonTitle] = useState("Copy");
 
   useEffect(() => {
@@ -586,23 +588,24 @@ function App() {
             </div>
             {Object.keys(tabData).length ? null : (
               <>
-              <div className="bookmark-message">
-                Kindly save to bookmarks bar for future access to this tool.
-                
-              </div>
-              <button
-  onClick={() => {
-    const isMac = navigator.platform.toUpperCase().includes("MAC");
-    alert(
-      `To bookmark this page, press ${isMac ? "⌘ + D" : "Ctrl + D"}`
-    );
-  }}
->
-  ⭐ Add to Bookmarks
-</button>
+                <div className="bookmark-message">
+                  Kindly save to bookmarks bar for future access to this tool.
+                </div>
+                <button
+                  onClick={() => {
+                    const isMac = navigator.platform
+                      .toUpperCase()
+                      .includes("MAC");
+                    alert(
+                      `To bookmark this page, press ${isMac ? "⌘ + D" : "Ctrl + D"}`,
+                    );
+                  }}
+                >
+                  ⭐ Add to Bookmarks
+                </button>
               </>
             )}
-            
+
             <div>
               <span
                 className="menu-toggle"
@@ -752,16 +755,25 @@ function App() {
                         <Button
                           title="Paste"
                           onClick={(e) => onClickPaste(e)}
+                          icon={<MdOutlineContentPaste size={40} />}
                         />
                       </div>
                       <div style={{ margin: "4px 4px 2px 4px" }}>
-                        <Button title="Clear" onClick={clear} />
+                        <Button
+                          title="Clear"
+                          onClick={clear}
+                          icon={<AiOutlineDelete size={10} />}
+                        />
                       </div>
                     </>
                   )}
 
                   <div style={{ margin: "4px 4px 2px 4px" }}>
-                    <Button title="Search" onClick={findWord} />
+                    <Button
+                      title="Search"
+                      onClick={findWord}
+                      icon={<IoSearch />}
+                    />
                   </div>
 
                   <CopyToClipboard
@@ -771,7 +783,10 @@ function App() {
                     }}
                   >
                     <div style={{ margin: "4px 4px 2px 4px" }}>
-                      <Button title={copyResButtonTitle} />
+                      <Button
+                        title={copyResButtonTitle}
+                        icon={<IoCopyOutline />}
+                      />
                     </div>
                   </CopyToClipboard>
 
@@ -842,6 +857,7 @@ function App() {
                         onClick={() => {
                           download("result.txt", tempEditorData || editorData);
                         }}
+                        icon={<IoMdDownload />}
                       />
                     </div>
                     <div>
@@ -853,6 +869,7 @@ function App() {
                             setNewData(resultData);
                           }
                         }}
+                        icon={<LuMoveHorizontal />}
                       />
                     </div>
                     <span
@@ -886,11 +903,10 @@ function App() {
                           style={{
                             marginTop: "4px",
                             marginLeft: "7px",
-                  
+
                             color: "lightgray",
                             transform:
                               "rotate(90deg) translateX(-1px) translateY(5px) scaleY(1.2)",
-                              
                           }}
                         >
                           &#10073;
@@ -917,7 +933,7 @@ function App() {
                           style={{
                             marginTop: "-5px",
                             marginLeft: "7px",
-                  
+
                             color: "lightgray",
                             transform:
                               "rotate(45deg) translateX(-1px) translateY(5px)",
@@ -927,8 +943,6 @@ function App() {
                           &#10006;{" "}
                         </div>
                       </div>
-
-                      
                     </div>
                   </div>
                 }
@@ -948,7 +962,7 @@ function App() {
                       }}
                     >
                       <div style={{ color: "white", fontSize: "14px" }}>
-                        SAVED : &nbsp;
+                        <span style={{fontSize:"12px"}}>HISTORY</span> : &nbsp;
                       </div>
 
                       <div
@@ -1014,7 +1028,6 @@ function App() {
               {/* ADS */}
               {/* <BannerAdC/> */}
               {/* <AdsComponent dataAdSlot="8496258064" /> */}
-              
             </div>
             {!sId && (
               <div className="menu-container">
