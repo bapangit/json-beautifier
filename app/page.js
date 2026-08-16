@@ -589,7 +589,7 @@ function App() {
             {Object.keys(tabData).length ? null : (
               <>
                 <div className="bookmark-message">
-                  Kindly save to bookmarks bar for future access to this tool.
+           Paste raw data in left panel , Kindly save to bookmarks bar for future access to this tool.
                 </div>
                 <button
                   onClick={() => {
@@ -601,7 +601,7 @@ function App() {
                     );
                   }}
                 >
-                  ⭐ Add to Bookmarks
+                  ⭐ Bookmark this tool
                 </button>
               </>
             )}
