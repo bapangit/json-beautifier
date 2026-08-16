@@ -180,6 +180,8 @@ export default function RootLayout({ children }) {
         </Script>
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8243682046974984"
      crossorigin="anonymous"></script>
+     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8243682046974984"
+     crossorigin="anonymous"></script>
       </body>
     </html>
   );
