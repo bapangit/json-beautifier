@@ -280,7 +280,7 @@ function App() {
   const [findValue, setFindValue] = useState("");
   const [inputLanguage, setInputLanguage] = useState("");
 
-  const [containerViewMode, setContainerViewMode] = useState("H");
+  const [containerViewMode, setContainerViewMode] = useState("B");
   const [isContainerViewModeReady, setIsContainerViewModeReady] =
     useState(false);
 
