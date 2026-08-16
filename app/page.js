@@ -188,7 +188,7 @@ const TopContainer = styled.div`
 const BottomContainer = styled.div`
   width: 100%;
   height: ${footerContainerHeight}px;
-  display: ${(p) => (p.$show ? "flex" : "none")};
+  display: ${(p) => (p.$show || true ? "flex" : "none")};
   flex-direction: column;
   background-color: #252525;
   z-index: 100;
