@@ -33,6 +33,7 @@ import { IoSearch } from "react-icons/io5";
 import { IoCopyOutline } from "react-icons/io5";
 import { IoMdDownload } from "react-icons/io";
 import { LuMoveHorizontal } from "react-icons/lu";
+import BannerAdC from "@/Components/Ads/BannerAdC";
 
 const headerContainerHeight = 70;
 const footerContainerHeight = 110;
@@ -602,7 +603,7 @@ function App() {
                     );
                   }}
                 >
-                  ⭐ Bookmark this tool
+                  ⭐ Bookmark this Tool
                 </button>
               </>
             )}
@@ -1036,7 +1037,7 @@ function App() {
                 )}
               </div>
               {/* ADS */}
-              {/* <BannerAdC/> */}
+              <BannerAdC/>
               {/* <AdsComponent dataAdSlot="8496258064" /> */}
             </div>
             {!sId && (
