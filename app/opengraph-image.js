@@ -1,18 +1,14 @@
 import { ImageResponse } from "next/og";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./seo";
+import { SITE_DESCRIPTION, SITE_NAME } from "./seo";
 
 export const alt = `${SITE_NAME} online JSON formatter and viewer`;
-
 export const size = {
   width: 1200,
   height: 630,
 };
-
 export const contentType = "image/png";
 
 export default function Image() {
-  const logoUrl = `${SITE_URL}/logo512.png`;
-
   return new ImageResponse(
     (
       <div
@@ -28,24 +24,6 @@ export default function Image() {
           fontFamily: "Arial",
         }}
       >
-        {/* Logo */}
-        <div
-          style={{
-            display: "flex",
-            marginBottom: "30px",
-          }}
-        >
-          <img
-            src={logoUrl}
-            width="110"
-            height="110"
-            style={{
-              objectFit: "contain",
-            }}
-          />
-        </div>
-
-        {/* Site Name */}
         <div
           style={{
             display: "flex",
@@ -56,8 +34,6 @@ export default function Image() {
         >
           {SITE_NAME}
         </div>
-
-        {/* Description */}
         <div
           style={{
             display: "flex",
@@ -70,8 +46,6 @@ export default function Image() {
         >
           {SITE_DESCRIPTION}
         </div>
-
-        {/* Tagline */}
         <div
           style={{
             display: "flex",
