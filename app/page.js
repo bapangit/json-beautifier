@@ -978,8 +978,8 @@ function App() {
                       <div
                         style={{
                           display: "flex",
-                          minWidth: "380px",
-                          maxWidth: "380px",
+                          minWidth: "370px",
+                          maxWidth: "370px",
                           overflowX: "scroll",
                           border: "1px solid grey",
                           padding: "2px",
