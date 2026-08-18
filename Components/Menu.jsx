@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import { LuMenu } from "react-icons/lu";
@@ -39,12 +39,16 @@ const ModalBackdrop = styled.div`
 `;
 
 const Modal = styled.div`
-  width: min(420px, calc(100vw - 24px));
+  width: min(92vw, 1500px);
+  height: min(86vh, 880px);
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 22px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.32);
   padding: 22px 18px 18px;
   border: 1px solid rgba(15, 23, 42, 0.08);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
 `;
 
 const ModalHeader = styled.div`
@@ -86,14 +90,33 @@ const NavLink = styled(Link)`
   text-decoration: none;
   font-weight: 600;
   text-align: center;
+  box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 
   &:hover {
+    transform: translateY(-1px);
     background: #e5e7eb;
+    box-shadow: rgba(99, 99, 99, 0.24) 0px 4px 10px 0px;
   }
 `;
 
 export default function Menu() {
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [isOpen]);
 
   return (
     <>
