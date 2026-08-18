@@ -7,7 +7,9 @@ import { LuMenu } from "react-icons/lu";
 
 const menuItems = [
   { href: "/", label: "JSON Beautifier" },
+  { href: "/json-minify", label: "JSON Minifier" },
   { href: "/json-to-xml", label: "JSON to XML" },
+  { href: "/xml-to-json", label: "XML to JSON" },
 ];
 
 const MenuButton = styled.button`
@@ -89,30 +91,50 @@ const CloseButton = styled.button`
 
 const NavGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const NavLink = styled(Link)`
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(17, 21, 26, 0.92);
-  color: #4ac8ff;
+  min-height: 250px;
+  padding: 24px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #ffffff, #f1f4f5);
+  color: #109dcc;
   text-decoration: none;
-  font-weight: 600;
+  font-size: clamp(24px, 3vw, 42px);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 2px;
+  line-height: 1.25;
   text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+  text-transform: uppercase;
+  border: 1px solid rgba(215, 222, 225, 0.8);
+  box-shadow: 0 10px 24px rgba(8, 31, 42, 0.16);
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 
   &:hover {
     transform: translateY(-1px);
-    background: rgba(22, 27, 31, 1);
-    box-shadow: rgba(99, 99, 99, 0.24) 0px 4px 10px 0px;
+    background: linear-gradient(145deg, #ffffff, #e9f0f2);
+    box-shadow: 0 14px 28px rgba(8, 31, 42, 0.2);
+  }
+
+  @media (max-width: 600px) {
+    min-height: 170px;
+    padding: 16px;
+    font-size: clamp(20px, 7vw, 30px);
+    letter-spacing: 1px;
   }
 `;
 
