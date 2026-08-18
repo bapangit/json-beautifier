@@ -64,8 +64,10 @@ const ModalHeader = styled.div`
 
   h3 {
     margin: 0;
-    font-size: 20px;
-    color: #f3f4f6;
+    color: #109dcc;
+    font-size: clamp(30px, 4vw, 48px);
+    font-weight: 400;
+    letter-spacing: 2px;
     text-align: center;
   }
 `;
