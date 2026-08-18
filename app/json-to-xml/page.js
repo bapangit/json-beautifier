@@ -23,6 +23,30 @@ import { IoMdClose } from "react-icons/io";
 import SavedTabData from "../../Components/CustomStates/SavedTabData";
 import { IoMdMoon } from "react-icons/io";
 import { HOME_JSON_LD } from "../seo";
+
+const JSON_TO_XML_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "JSON to XML Converter",
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Any",
+  browserRequirements: "Requires modern web browser",
+  description:
+    "Free online JSON to XML converter that transforms JSON data into XML markup with a split editor and instant conversion results.",
+  url: "https://www.json-beautifier.net/json-to-xml",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  featureList: [
+    "Convert JSON to XML",
+    "Paste JSON and generate XML instantly",
+    "Copy and download converted XML",
+    "Validate and inspect converted output",
+    "Works in any browser",
+  ],
+};
 import Link from "next/link";
 import { MdOutlineContentPaste } from "react-icons/md";
 import { AiOutlineDelete } from "react-icons/ai";
@@ -654,6 +678,12 @@ function App() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_JSON_LD) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(JSON_TO_XML_SCHEMA),
+        }}
       />
 
       <main
