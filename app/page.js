@@ -3,7 +3,6 @@ import Editor from "@monaco-editor/react";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { css, styled } from "styled-components";
 import SplitPane from "react-split-pane";
-import Button from "../Components/Buttons/Button";
 import {
   TrimValueState,
   decompress,
@@ -33,6 +32,7 @@ import { IoSearch } from "react-icons/io5";
 import { IoCopyOutline } from "react-icons/io5";
 import { IoMdDownload } from "react-icons/io";
 import { LuMoveHorizontal } from "react-icons/lu";
+import Button from "@/Components/Buttons/Button";
 // import BannerAdC from "@/Components/Ads/BannerAdC";
 
 const headerContainerHeight = 70;
