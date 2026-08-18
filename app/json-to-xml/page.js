@@ -30,10 +30,13 @@ import { IoSearch } from "react-icons/io5";
 import { IoCopyOutline } from "react-icons/io5";
 import { IoMdDownload } from "react-icons/io";
 import { LuMoveHorizontal } from "react-icons/lu";
+import Menu from "../../Components/Menu";
 
 const headerContainerHeight = 70;
 const footerContainerHeight = 110;
 const HOME_NAV_LINKS = [
+  { href: "/", label: "Home" },
+  { href: "/json-to-xml", label: "JSON to XML" },
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact" },
   { href: "/privacy-policy", label: "Privacy Policy" },
@@ -228,6 +231,23 @@ const HomeSeoSection = styled.section`
     flex-wrap: wrap;
     gap: 14px;
     margin-top: 18px;
+  }
+
+  .link-row a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 600;
+    transition: opacity 0.2s ease;
+  }
+
+  .link-row a:hover {
+    opacity: 0.9;
   }
 
   a {
@@ -670,7 +690,9 @@ function App() {
               </>
             )}
 
-            <div></div>
+            <div>
+              <Menu />
+            </div>
           </HeaderContainer>
         }
         <TopContainer mode={containerViewMode}>
