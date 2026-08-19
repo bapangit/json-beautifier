@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
-import { LuMenu, LuSearch } from "react-icons/lu";
+import { LuSearch } from "react-icons/lu";
+import { FaTools } from "react-icons/fa";
 
 const menuItems = [
   { href: "/", label: "JSON Beautifier" },
@@ -18,8 +19,8 @@ const MenuButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
   background: rgba(50, 53, 58, 0.9);
@@ -184,7 +185,7 @@ const NavLink = styled(Link)`
 
   &:hover {
     transform: translateY(-1px);
-    background: linear-gradient(145deg, #ffffff, #e9f0f2);
+    background: linear-gradient(145deg, #ffffff, #e1f3f7);
     box-shadow: 0 14px 28px rgba(8, 31, 42, 0.2);
   }
 
@@ -226,7 +227,7 @@ export default function Menu() {
         aria-label="Open site navigation menu"
         onClick={() => setIsOpen(true)}
       >
-        <LuMenu size={18} />
+        <FaTools size={16} />
       </MenuButton>
 
       {isOpen && (
