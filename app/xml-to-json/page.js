@@ -58,8 +58,6 @@ const footerContainerHeight = 110;
 
 const HOME_NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/json-to-xml", label: "JSON to XML" },
-  { href: "/xml-to-json", label: "XML to JSON" },
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact" },
   { href: "/privacy-policy", label: "Privacy Policy" },
