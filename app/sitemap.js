@@ -27,6 +27,18 @@ export default function sitemap() {
       priority: 0.6,
     },
     {
+      url: `${SITE_URL}/blog`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/blog/what-is-json`,
+      lastModified: new Date("2026-08-19"),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
       url: `${SITE_URL}/json-to-xml`,
       lastModified: new Date(),
       changeFrequency: "weekly",
