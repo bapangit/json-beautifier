@@ -56,10 +56,10 @@ const footerContainerHeight = 110;
 
 const HOME_NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/json-to-xml", label: "JSON to XML" },
-  { href: "/xml-to-json", label: "XML to JSON" },
-  { href: "/json-to-csv", label: "JSON to CSV" },
-  { href: "/csv-to-json", label: "CSV to JSON" },
+//   { href: "/json-to-xml", label: "JSON to XML" },
+//   { href: "/xml-to-json", label: "XML to JSON" },
+//   { href: "/json-to-csv", label: "JSON to CSV" },
+//   { href: "/csv-to-json", label: "CSV to JSON" },
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact" },
   { href: "/privacy-policy", label: "Privacy Policy" },
@@ -397,6 +397,28 @@ const BottomContainer = styled.div`
     &:hover {
       border-color: #963d32;
       background-color: #8b4238;
+    }
+  }
+
+  .history-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #963d32 #1b1b1b;
+
+    &::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #1b1b1b;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border-radius: 4px;
+      background: #963d32;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: #b84d40;
     }
   }
 
@@ -1148,7 +1170,10 @@ function App() {
                           "1px solid grey",
                         padding: "2px",
                         borderRadius: "4px",
+                        position: "relative",
                       }}
+                      className="history-scrollbar"
+                      id="myDivId"
                     >
                       {Object.keys(tabData).length <
                         1 && (
