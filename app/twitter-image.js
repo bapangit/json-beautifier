@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
 import { SITE_DESCRIPTION, SITE_NAME } from "./seo";
 
 export const alt = `${SITE_NAME} online JSON formatter and viewer`;
@@ -8,7 +9,10 @@ export const size = {
 };
 export const contentType = "image/png";
 
-export default function Image() {
+export default async function Image() {
+  const logo = await readFile(new URL("../public/logo512.png", import.meta.url));
+  const logoData = `data:image/png;base64,${logo.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -24,6 +28,16 @@ export default function Image() {
           fontFamily: "Arial",
         }}
       >
+        <img
+          src={logoData}
+          alt=""
+          style={{
+            width: "128px",
+            height: "128px",
+            borderRadius: "28px",
+            marginBottom: "32px",
+          }}
+        />
         <div
           style={{
             display: "flex",
