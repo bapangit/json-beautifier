@@ -237,7 +237,7 @@ const HeaderContainer = styled.div`
 
 const HomeSeoSection = styled.section`
   padding: 28px 18px 48px;
-  background: darkgray;
+  background: white;
   color: #111827;
 
   .content {
