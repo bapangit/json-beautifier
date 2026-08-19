@@ -9,7 +9,9 @@ export const SITE_DESCRIPTION =
   "Format, beautify, validate, and inspect JSON online with a fast split-view JSON editor and viewer.";
 export const SITE_KEYWORDS = [
   "json beautifier",
+  "json beautifier online",
   "json formatter",
+  "json formatter online",
   "json pretty print",
   "json viewer",
   "json validator",
