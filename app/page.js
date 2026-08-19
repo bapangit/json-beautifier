@@ -7,7 +7,6 @@ import {
   TrimValueState,
   decompress,
   getContainerMode,
-  getHistory,
   getMode,
   getTimeDiff,
   saveContainerMode,
@@ -314,21 +313,8 @@ function App() {
 
   useBrowserLayoutEffect(() => {
     if (!sId) {
-      const savedEditorData = getHistory();
-      setEditorData(savedEditorData);
-      const trimmedSavedEditorData = trimEditorData(savedEditorData, trimValue);
-
-      if (trimmedSavedEditorData) {
-        try {
-          setResultData(formatJsonData(trimmedSavedEditorData));
-          setInputLanguage("json");
-          setCompressionType("json");
-        } catch {
-          setResultData("");
-        }
-      } else {
-        setResultData("");
-      }
+      setEditorData("");
+      setResultData("");
     }
     const savedContainerMode = getContainerMode();
     setContainerViewMode(savedContainerMode === "B" ? "B" : "H");

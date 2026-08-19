@@ -8,7 +8,6 @@ import Button from "../../Components/Buttons/Button";
 import {
   TrimValueState,
   getContainerMode,
-  getHistory,
   getMode,
   getTimeDiff,
   saveContainerMode,
@@ -438,25 +437,8 @@ function App() {
 
   useBrowserLayoutEffect(() => {
     if (!sId) {
-      const savedEditorData = getHistory();
-
-      setEditorData(savedEditorData);
-
-      const trimmedSavedEditorData =
-        trimEditorData(
-          savedEditorData,
-          trimValue,
-        );
-
-      if (trimmedSavedEditorData) {
-        try {
-          setResultData(
-            formatCsvData(trimmedSavedEditorData),
-          );
-        } catch {
-          setResultData("");
-        }
-      }
+      setEditorData("");
+      setResultData("");
     }
 
     const savedContainerMode =
