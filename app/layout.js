@@ -34,6 +34,12 @@ export const metadata = {
   applicationName: SITE_NAME,
   keywords: SITE_KEYWORDS,
 
+  verification: {
+    other: {
+      "msvalidate.01": "AEF2E418738AA7FA600581FA5D09FFE1",
+    },
+  },
+
   authors: [
     {
       name: SITE_NAME,
