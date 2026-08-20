@@ -194,15 +194,7 @@ const HomeSeoSection = styled.section`
 
 const TopContainer = styled.div`
   width: 100%;
-  ${(p) => {
-    return p.mode === "H"
-      ? css`
-          height: calc(100vh - ${headerContainerHeight+footerContainerHeight-20}px);
-        `
-      : css`
-          height: calc(100vh - ${footerContainerHeight+headerContainerHeight-20}px);
-        `;
-  }}
+  height: calc(100vh - ${headerContainerHeight+footerContainerHeight-20}px);
 `;
 
 const BottomContainer = styled.div`
