@@ -34,6 +34,21 @@ export const metadata = {
   applicationName: SITE_NAME,
   keywords: SITE_KEYWORDS,
 
+  // Favicon and app icons
+  icons: {
+    icon: [
+      {
+        url: "/favicon.ico",
+        sizes: "any",
+      },
+      {
+        url: "/icon.png",
+        type: "image/png",
+        sizes: "512x512",
+      },
+    ],
+  },
+
   verification: {
     other: {
       "msvalidate.01": "AEF2E418738AA7FA600581FA5D09FFE1",
@@ -184,10 +199,14 @@ export default function RootLayout({ children }) {
             });
           `}
         </Script>
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8243682046974984"
-     crossorigin="anonymous"></script>
-     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8243682046974984"
-     crossorigin="anonymous"></script>
+
+        {/* Google AdSense */}
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8243682046974984"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
