@@ -39,6 +39,12 @@ export default function sitemap() {
       priority: 0.8,
     },
     {
+      url: `${SITE_URL}/blog/how-to-format-json-online`,
+      lastModified: new Date("2026-08-20"),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
       url: `${SITE_URL}/json-to-xml`,
       lastModified: new Date(),
       changeFrequency: "weekly",

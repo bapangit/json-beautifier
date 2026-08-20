@@ -27,6 +27,13 @@ export const metadata = {
 
 const articles = [
   {
+    href: "/blog/how-to-format-json-online",
+    title: "How to Format JSON Online",
+    description:
+      "Turn compact or difficult-to-read JSON into clean, indented data and learn how to spot formatting errors quickly.",
+    label: "JSON formatting",
+  },
+  {
     href: "/blog/what-is-json",
     title: "What Is JSON? A Beginner's Guide",
     description:
