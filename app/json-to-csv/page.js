@@ -703,27 +703,7 @@ function App() {
             <div className="brand-nav">
               <h1 className="brand-title">JSON to CSV Converter</h1>
             </div>
-            {Object.keys(tabData).length ? null : (
-              <>
-                <div className="bookmark-message">
-                  {/* Paste raw JSON in left panel, Kindly save to bookmarks bar
-                  for future access to this tool. */}
-                </div>
-                {!isBookmarked && <button
-                  onClick={() => {
-                    const isMac = navigator.platform
-                      .toUpperCase()
-                      .includes("MAC");
-                    alert(
-                      `To bookmark this page, press ${isMac ? "⌘ + D" : "Ctrl + D"}`,
-                    );
-                    bookmark()
-                  }}
-                >
-                  ⭐ Bookmark this Tool
-                </button>}
-              </>
-            )}
+            
 
             <div>
               <Menu />

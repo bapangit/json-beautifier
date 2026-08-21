@@ -68,7 +68,7 @@ const HeaderContainer = styled.div`
   width: 100%;
   height: 50px;
   padding: 0px 15px;
-  display: ${(p) => (p.$show ||true ? "flex" : "none")};
+  display: ${(p) => (p.$show || true ? "flex" : "none")};
   justify-content: space-between;
   gap: 20px;
   align-items: center;
@@ -135,7 +135,6 @@ const HomeSeoSection = styled.section`
   .content {
     max-width: 960px;
     margin: 0 auto;
-    
   }
 
   h2 {
@@ -195,7 +194,7 @@ const HomeSeoSection = styled.section`
 
 const TopContainer = styled.div`
   width: 100%;
-  height: calc(100vh - ${headerContainerHeight+footerContainerHeight-20}px);
+  height: calc(100vh - ${headerContainerHeight + footerContainerHeight - 20}px);
 `;
 
 const BottomContainer = styled.div`
@@ -588,10 +587,10 @@ function App() {
             <div className="brand-nav">
               <h1 className="brand-title">JSON Beautifier </h1>
             </div>
-            {Object.keys(tabData).length ? null : (
+            {/* {Object.keys(tabData).length ? null : (
               <>
                 <div className="bookmark-message">
-           {/* Paste raw data in left panel , Kindly save to bookmarks bar for future access to this tool. */}
+           Paste raw data in left panel , Kindly save to bookmarks bar for future access to this tool.
                 </div>
                 {!isBookmarked && <button
                   onClick={() => {
@@ -607,7 +606,36 @@ function App() {
                   ⭐ Bookmark this Tool
                 </button>}
               </>
-            )}
+            )} */}
+
+            <div
+              style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              {!isBookmarked && (
+                <button
+                  style={{ padding: "2px 8px" }}
+                  onClick={() => {
+                    const isMac = navigator.platform
+                      .toUpperCase()
+                      .includes("MAC");
+
+                    alert(
+                      `To bookmark this page, press ${
+                        isMac ? "⌘ + D" : "Ctrl + D"
+                      }`,
+                    );
+
+                    bookmark();
+                  }}
+                >
+                  ⭐ Bookmark this Tool
+                </button>
+              )}
+            </div>
 
             <div>
               <Menu />
@@ -627,7 +655,7 @@ function App() {
               //     : footerContainerHeight
               // }px)`,
               height: `calc(100vh - ${
-                headerContainerHeight+footerContainerHeight-20
+                headerContainerHeight + footerContainerHeight - 20
               }px)`,
               width: "100%",
             }}
@@ -643,7 +671,7 @@ function App() {
                 //     : footerContainerHeight
                 // }px)`}
                 height={`calc(100vh - ${
-                  headerContainerHeight+footerContainerHeight-20
+                  headerContainerHeight + footerContainerHeight - 20
                 }px)`}
                 theme="vs-dark"
                 path="file:///json-beautifier/input.json"
@@ -683,7 +711,7 @@ function App() {
                 //     : footerContainerHeight
                 // }px)`}
                 height={`calc(100vh - ${
-                  headerContainerHeight+footerContainerHeight-20
+                  headerContainerHeight + footerContainerHeight - 20
                 }px)`}
                 width="100%"
                 theme="vs-dark"
@@ -969,7 +997,8 @@ function App() {
                       }}
                     >
                       <div style={{ color: "white", fontSize: "14px" }}>
-                        <span style={{fontSize:"12px"}}>HISTORY</span> : &nbsp;
+                        <span style={{ fontSize: "12px" }}>HISTORY</span> :
+                        &nbsp;
                       </div>
 
                       <div
