@@ -723,7 +723,7 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                     bookmark();
                   }}
                 >
-                  ⭐ Bookmark this Tool
+                  ⭐ Add to Bookmark
                 </button>
               )}
             </div>

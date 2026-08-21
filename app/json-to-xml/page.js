@@ -711,7 +711,7 @@ function App() {
                     bookmark();
                   }}
                 >
-                  ⭐ Bookmark this Tool
+                  ⭐ Add to Bookmark
                 </button>
               )}
             </div>
