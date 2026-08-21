@@ -202,6 +202,8 @@ export default function RootLayout({ children }) {
           `}
         </Script>
 
+
+
         {/* Google AdSense */}
         <Script
           async

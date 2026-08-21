@@ -703,10 +703,10 @@ function App() {
             </div>
             {Object.keys(tabData).length ? null : (
               <>
-                <div className="bookmark-message">
+                {/* <div className="bookmark-message">
                   Paste raw JSON in left panel, Kindly save to bookmarks bar
                   for future access to this tool.
-                </div>
+                </div> */}
                 <button
                   onClick={() => {
                     const isMac = navigator.platform
