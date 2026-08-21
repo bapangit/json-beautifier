@@ -28,6 +28,7 @@ import { AiOutlineDelete } from "react-icons/ai";
 import { IoSearch, IoCopyOutline } from "react-icons/io5";
 import { LuMoveHorizontal } from "react-icons/lu";
 import Menu from "../../Components/Menu";
+import { useBookmarkStatus } from "@/Components/CustomStates/CheckBookmark";
 
 const XML_TO_JSON_SCHEMA = {
   "@context": "https://schema.org",
@@ -394,7 +395,7 @@ const BottomContainer = styled.div`
 
 function App() {
   const { sId } = useParams();
-
+const [isBookmarked, bookmark] = useBookmarkStatus();
   const { tabData, save, getTabData, deleteTab } = SavedTabData();
 
   const [editorData, setEditorData] = useState("");
@@ -700,26 +701,24 @@ function App() {
 
           {Object.keys(tabData).length ? null : (
             <>
-              {/* <div className="bookmark-message">
-                Paste raw XML in left panel, Kindly save to bookmarks
-                bar for future access to this tool.
-              </div> */}
+              <div className="bookmark-message">
+                {/* Paste raw XML in left panel, Kindly save to bookmarks
+                bar for future access to this tool. */}
+              </div>
 
-              <button
-                onClick={() => {
-                  const isMac = navigator.platform
-                    .toUpperCase()
-                    .includes("MAC");
-
-                  alert(
-                    `To bookmark this page, press ${
-                      isMac ? "⌘ + D" : "Ctrl + D"
-                    }`,
-                  );
-                }}
-              >
-                ⭐ Bookmark this Tool
-              </button>
+              {!isBookmarked && <button
+                  onClick={() => {
+                    const isMac = navigator.platform
+                      .toUpperCase()
+                      .includes("MAC");
+                    alert(
+                      `To bookmark this page, press ${isMac ? "⌘ + D" : "Ctrl + D"}`,
+                    );
+                    bookmark()
+                  }}
+                >
+                  ⭐ Bookmark this Tool
+                </button>}
             </>
           )}
 

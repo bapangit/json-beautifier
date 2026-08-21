@@ -33,6 +33,7 @@ import { IoMdDownload } from "react-icons/io";
 import { LuMoveHorizontal } from "react-icons/lu";
 import Button from "@/Components/Buttons/Button";
 import Menu from "@/Components/Menu";
+import { useBookmarkStatus } from "@/Components/CustomStates/CheckBookmark";
 // import BannerAdC from "@/Components/Ads/BannerAdC";
 
 const headerContainerHeight = 70;
@@ -266,6 +267,7 @@ const BottomContainer = styled.div`
 `;
 
 function App() {
+  const [isBookmarked, bookmark] = useBookmarkStatus();
   const { sId } = useParams();
   const { tabData, save, getTabData, deleteTab } = SavedTabData();
 
@@ -588,10 +590,10 @@ function App() {
             </div>
             {Object.keys(tabData).length ? null : (
               <>
-                {/* <div className="bookmark-message">
-           Paste raw data in left panel , Kindly save to bookmarks bar for future access to this tool.
-                </div> */}
-                <button
+                <div className="bookmark-message">
+           {/* Paste raw data in left panel , Kindly save to bookmarks bar for future access to this tool. */}
+                </div>
+                {!isBookmarked && <button
                   onClick={() => {
                     const isMac = navigator.platform
                       .toUpperCase()
@@ -599,10 +601,11 @@ function App() {
                     alert(
                       `To bookmark this page, press ${isMac ? "⌘ + D" : "Ctrl + D"}`,
                     );
+                    bookmark()
                   }}
                 >
                   ⭐ Bookmark this Tool
-                </button>
+                </button>}
               </>
             )}
 
