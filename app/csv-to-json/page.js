@@ -27,6 +27,7 @@ import { AiOutlineDelete } from "react-icons/ai";
 import { IoSearch, IoCopyOutline } from "react-icons/io5";
 import Menu from "../../Components/Menu";
 import { useBookmarkStatus } from "@/Components/CustomStates/CheckBookmark";
+import { LuMoveHorizontal } from "react-icons/lu";
 
 const CSV_TO_JSON_SCHEMA = {
   "@context": "https://schema.org",
@@ -1067,64 +1068,91 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                   />
                 </div>
 
+                <div>
+                      <Button
+                        title="Paste Result"
+                        onClick={() => {
+                          if (resultData) {
+                            setEditorData(() => resultData);
+                            setNewData(resultData);
+                          }
+                        }}
+                        icon={<LuMoveHorizontal />}
+                      />
+                    </div>
+
                 <span
-                  style={{
-                    color: "lightgray",
-                    fontSize: "14px",
-                    marginLeft: "48px",
-                  }}
-                >
-                  Font Size :
-                </span>
+                      style={{
+                        color: "lightgray",
+                        fontSize: "14px",
+                        marginLeft: "48px",
+                      }}
+                    >
+                      Font Size :
+                    </span>
 
                 <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "7px",
-                  }}
-                >
-                  <div
-                    style={{
-                      cursor: "pointer",
-                      color: "lightgray",
-                    }}
-                    onClick={() =>
-                      setFontSize(
-                        fontSize > 5
-                          ? fontSize - 1
-                          : 5,
-                      )
-                    }
-                  >
-                    −
-                  </div>
+                      style={{
+                        marginLeft: "5px",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: "7px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          cursor: "pointer",
+                        }}
+                        onClick={() =>
+                          setFontSize(fontSize > 5 ? fontSize - 1 : 5)
+                        }
+                      >
+                        <div
+                          style={{
+                            marginTop: "4px",
+                            marginLeft: "7px",
 
-                  <Button
-                    title={fontSize}
-                    style={{
-                      backgroundColor:
-                        "white",
-                      height: "20px",
-                      width: "28px",
-                      padding: "0px",
-                    }}
-                  />
+                            color: "lightgray",
+                            transform:
+                              "rotate(90deg) translateX(-1px) translateY(5px) scaleY(1.2)",
+                          }}
+                        >
+                          &#10073;
+                        </div>
+                      </div>
+                      <div>
+                        <Button
+                          title={fontSize}
+                          style={{
+                            backgroundColor: "white",
+                            height: "20px",
+                            width: "28px",
+                            padding: "0px",
+                          }}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          cursor: "pointer",
+                        }}
+                        onClick={() => setFontSize(fontSize + 1)}
+                      >
+                        <div
+                          style={{
+                            marginTop: "-5px",
+                            marginLeft: "7px",
 
-                  <div
-                    style={{
-                      cursor: "pointer",
-                      color: "lightgray",
-                    }}
-                    onClick={() =>
-                      setFontSize(
-                        fontSize + 1,
-                      )
-                    }
-                  >
-                    +
-                  </div>
-                </div>
+                            color: "lightgray",
+                            transform:
+                              "rotate(45deg) translateX(-1px) translateY(5px)",
+                          }}
+                        >
+                          {" "}
+                          &#10006;{" "}
+                        </div>
+                      </div>
+                    </div>
               </div>
 
               {!sId && (
