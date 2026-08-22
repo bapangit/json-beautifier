@@ -603,7 +603,7 @@ function App() {
                     bookmark()
                   }}
                 >
-                  ⭐ Add to Bookmark
+                  ⭐ Save to Bookmark
                 </button>}
               </>
             )} */}
@@ -632,7 +632,7 @@ function App() {
                     bookmark();
                   }}
                 >
-                  ⭐ Add to Bookmark
+                  ⭐ Save to Bookmark
                 </button>
               )}
             </div>
