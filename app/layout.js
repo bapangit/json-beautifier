@@ -146,6 +146,9 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
+      <head>
+        <link rel="icon" href="/favicon.ico" />
+      </head>
       <body>
         <StyledComponentsRegistry>
           {children}
