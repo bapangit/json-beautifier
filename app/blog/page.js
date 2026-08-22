@@ -40,6 +40,13 @@ const articles = [
       "Learn what JSON is, how JSON objects and arrays work, and where this lightweight data format is used.",
     label: "JSON basics",
   },
+  {
+    href: "/blog/json-vs-xml",
+    title: "JSON vs XML: What Is the Difference?",
+    description:
+      "Compare JSON and XML syntax, readability, file size, data types, and common use cases.",
+    label: "Data formats",
+  },
 ];
 
 export default function BlogPage() {

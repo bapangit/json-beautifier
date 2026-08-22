@@ -1,14 +1,19 @@
 "use client";
 
 // useToggle.js
-import { useState } from "react";
+import { useEffect, useState } from "react";
 const KEY = "bookmark-key";
 // Custom state hook that defaults to 'false' if no value is given
 export function useBookmarkStatus() {
-  const [isBookmarked, setBookmarked] = useState(() =>
-    typeof window !== "undefined" &&
-    window.localStorage.getItem(KEY) === "bookmarked"
-  );
+  const [isBookmarked, setBookmarked] = useState(false);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setBookmarked(window.localStorage.getItem(KEY) === "bookmarked");
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   // Reusable function to reverse the current state
   const bookmark = () => {
