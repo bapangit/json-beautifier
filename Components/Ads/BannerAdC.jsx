@@ -8,7 +8,7 @@ const BannerAd = () => {
     if (!adRef.current || adRef.current.childNodes.length > 0) return;
 
     window.atOptions = {
-      key: "b463f71e76128a38edbc4c0bfcdf28c0",
+      key: "81fb3a67bd25350578a9e622412e515b",
       format: "iframe",
       height: 90,
       width: 728,
@@ -17,7 +17,7 @@ const BannerAd = () => {
 
     const script = document.createElement("script");
     script.src =
-      "https://www.highperformanceformat.com/b463f71e76128a38edbc4c0bfcdf28c0/invoke.js";
+      "https://www.highrevenueformat.com/81fb3a67bd25350578a9e622412e515b/invoke.js";
     script.async = true;
 
     adRef.current.appendChild(script);
