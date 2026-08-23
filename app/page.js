@@ -34,7 +34,7 @@ import { LuMoveHorizontal } from "react-icons/lu";
 import Button from "@/Components/Buttons/Button";
 import Menu from "@/Components/Menu";
 import { useBookmarkStatus } from "@/Components/CustomStates/CheckBookmark";
-// import BannerAdC from "@/Components/Ads/BannerAdC";
+import BannerAdC from "@/Components/Ads/BannerAdC";
 
 const headerContainerHeight = 70;
 const footerContainerHeight = 110;
@@ -1063,7 +1063,7 @@ function App() {
                 )}
               </div>
               {/* ADS */}
-              {/* <BannerAdC/> */}
+              <BannerAdC/>
               {/* <AdsComponent dataAdSlot="8496258064" /> */}
             </div>
             {!sId && (
