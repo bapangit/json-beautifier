@@ -1,11 +1,11 @@
 import { styled } from "styled-components";
 
 const Btn = styled.button`
-  border: 1px solid #00000000;
-  border-radius: 2px;
-  color: black;
-  background-color: #ffffff75;
-  padding: 3px 7px;
+  border: 1px solid #8bd8d0;
+  border-radius: 4px;
+  color: #12343b;
+  background-color: #dff5f1;
+  padding: 3px 8px;
   height: 28px;
   min-height: 28px;
 
@@ -22,12 +22,12 @@ const Btn = styled.button`
   ${({ $customStyle }) => $customStyle}
 
   &:hover {
-    background-color: #ffffff26;
-    color: #b1b1b1;
+    background-color: #b8e8e1;
+    color: #0f4c5c;
   }
 
   &:active {
-    color: grey;
+    color: #0f766e;
   }
 
   .button-icon {

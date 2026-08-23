@@ -72,9 +72,9 @@ const HeaderContainer = styled.div`
   justify-content: space-between;
   gap: 20px;
   align-items: center;
-  border-bottom: 1px solid grey;
-  background-color: darkgrey;
-  color: #000000;
+  border-bottom: 1px solid #94a3b8;
+  background-color: #e8f3f2;
+  color: #12343b;
   z-index: 100;
 
   .brand-nav {
@@ -88,6 +88,7 @@ const HeaderContainer = styled.div`
     margin: 0;
     font-size: 24px;
     font-weight: 500;
+    color: #0f766e;
     white-space: nowrap;
   }
 
@@ -211,7 +212,7 @@ const BottomContainer = styled.div`
   height: ${footerContainerHeight}px;
   display: ${(p) => (p.$show || true ? "flex" : "none")};
   flex-direction: column;
-  background-color: #252525;
+  background-color: #0f2630;
   z-index: 100;
 
   .menu-container {
@@ -760,7 +761,7 @@ function App() {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  backgroundColor: "#5e5e5e9b",
+                  backgroundColor: "#164e63",
                 }}
               >
                 <div
@@ -978,7 +979,7 @@ function App() {
                         justifyContent: "center",
                         alignItems: "center",
                         padding: "5px 8px",
-                        backgroundColor: "#1b1b1bb7",
+                        backgroundColor: "#12343b",
                         marginLeft: "8px",
                         borderRadius: "2px",
                       }}
