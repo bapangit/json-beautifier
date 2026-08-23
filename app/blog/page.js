@@ -27,6 +27,13 @@ export const metadata = {
 
 const articles = [
   {
+    href: "/blog/json-errors",
+    title: "Common JSON Errors and How to Fix Them",
+    description:
+      "Find and fix common json errors, including missing commas, quote problems, trailing commas, and mismatched brackets.",
+    label: "JSON troubleshooting",
+  },
+  {
     href: "/blog/how-to-format-json-online",
     title: "How to Format JSON Online",
     description:

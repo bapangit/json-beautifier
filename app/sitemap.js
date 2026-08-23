@@ -33,6 +33,12 @@ export default function sitemap() {
       priority: 0.8,
     },
     {
+      url: `${SITE_URL}/blog/json-errors`,
+      lastModified: new Date("2026-08-23"),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
       url: `${SITE_URL}/blog/what-is-json`,
       lastModified: new Date("2026-08-19"),
       changeFrequency: "monthly",
