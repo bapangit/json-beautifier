@@ -368,7 +368,7 @@ export default function Menu() {
         <ModalBackdrop onClick={() => setIsOpen(false)}>
           <Modal onClick={(event) => event.stopPropagation()}>
             <ModalHeader>
-              <h3>All JSON Tools</h3>
+              <h3>More JSON Tools</h3>
 
               <CloseButton
                 type="button"
