@@ -36,7 +36,8 @@ const BannerAd = () => {
         width: "728px",
         height: "90px",
         overflow: "hidden",
-        marginLeft:"20px"
+        marginLeft:"40px",
+        marginTop:"10px"
       }}
     />
   );

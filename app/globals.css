@@ -1,11 +1,11 @@
 :root {
-  --background: #0f172a;
+  --background: #e2e8f0;
   --foreground: #e2e8f0;
-  --brand-teal: #0f766e;
-  --workspace: #1e293b;
-  --workspace-deep: #0f2630;
-  --panel: #164e63;
-  --panel-soft: #dff5f1;
+  --brand-teal: #e2e8f0;
+  --workspace: #e2e8f0;
+  --workspace-deep: #e2e8f0;
+  --panel: #e2e8f0;
+  --panel-soft: #e2e8f0;
 }
 
 /* @media (prefers-color-scheme: dark) {

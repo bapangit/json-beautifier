@@ -513,7 +513,7 @@ function App() {
 
   const clear = () => {
     setEditorData("");
-    setResultData("");
+    // setResultData("");
   };
 
   const [copyButtonTitle, setCopyButtonTitle] = useState("Copy");
