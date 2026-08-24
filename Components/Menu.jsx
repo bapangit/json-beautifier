@@ -86,8 +86,8 @@ const ModalBackdrop = styled.div`
 `;
 
 const Modal = styled.div`
-  width: min(92vw, 1500px);
-  height: min(86vh, 880px);
+  width: min(88vw, 1100px);
+  height: min(78vh, 700px);
 
   background: linear-gradient(
     180deg,
@@ -95,11 +95,11 @@ const Modal = styled.div`
     rgba(21, 24, 29, 0.96)
   );
 
-  border-radius: 22px;
+  border-radius: 18px;
 
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
 
-  padding: 22px 18px 18px;
+  padding: 18px 16px 16px;
 
   border: 1px solid rgba(255, 255, 255, 0.08);
 
@@ -117,16 +117,16 @@ const ModalHeader = styled.div`
   align-items: center;
   justify-content: center;
 
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 
-  min-height: 42px;
+  min-height: 36px;
 
   h3 {
     margin: 0;
 
     color: #109dcc;
 
-    font-size: clamp(30px, 4vw, 48px);
+    font-size: clamp(24px, 3vw, 36px);
 
     font-weight: 400;
 
@@ -208,7 +208,7 @@ const SearchBar = styled.div`
   width: 100%;
   max-width: 620px;
 
-  margin: 0 auto 22px;
+  margin: 0 auto 16px;
 
   svg {
     position: absolute;
@@ -227,7 +227,7 @@ const SearchBar = styled.div`
 const SearchInput = styled.input`
   width: 100%;
 
-  min-height: 48px;
+  min-height: 42px;
 
   padding: 10px 16px 10px 46px;
 
@@ -276,11 +276,11 @@ const NavLink = styled(Link)`
   align-items: center;
   justify-content: center;
 
-  min-height: 220px;
+  min-height: 150px;
 
-  padding: 20px;
+  padding: 14px;
 
-  border-radius: 24px;
+  border-radius: 16px;
 
   background: linear-gradient(145deg, #ffffff, #f1f4f5);
 
@@ -288,7 +288,7 @@ const NavLink = styled(Link)`
 
   text-decoration: none;
 
-  font-size: clamp(22px, 2.7vw, 38px);
+  font-size: clamp(18px, 2.2vw, 30px);
 
   font-style: italic;
 
@@ -320,7 +320,7 @@ const NavLink = styled(Link)`
   }
 
   @media (max-width: 600px) {
-    min-height: 150px;
+    min-height: 120px;
 
     padding: 14px;
 
