@@ -10,9 +10,9 @@ const menuItems = [
   { href: "/", label: "JSON Beautifier" },
   { href: "/json-minify", label: "JSON Minifier" },
   { href: "/json-to-xml", label: "JSON to XML" },
+  { href: "/xml-to-json", label: "XML to JSON" },
   { href: "/json-to-csv", label: "JSON to CSV" },
   { href: "/csv-to-json", label: "CSV to JSON" },
-  { href: "/xml-to-json", label: "XML to JSON" },
 ];
 
 const MenuButton = styled.button`
