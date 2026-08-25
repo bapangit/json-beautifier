@@ -319,6 +319,13 @@ const ToolDivider = styled.div`
   margin: 0 4px;
 `;
 
+const ToolRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+`;
+
 const HistoryOverlay = styled.div`
   position: fixed;
   inset: 0;
@@ -1034,25 +1041,6 @@ function App() {
                     History
                   </ToolBtn>
 
-                  <CopyToClipboard
-                    text={resultData}
-                    onCopy={() => {
-                      setCopyResButtonTitle("Copied");
-                    }}
-                  >
-                    <ToolBtn>
-                      <IoCopyOutline />
-                      {copyResButtonTitle}
-                    </ToolBtn>
-                  </CopyToClipboard>
-
-                  <ToolDivider />
-
-                  <ToolBtn onClick={findWord}>
-                    <IoSearch />
-                    Search
-                  </ToolBtn>
-
                   <ToolBtn
                     onClick={() => {
                       download("result.txt", tempEditorData || editorData);
@@ -1073,6 +1061,36 @@ function App() {
                     <LuMoveHorizontal />
                     Paste Result
                   </ToolBtn>
+
+                  <ToolRight>
+                    <ToolBtn
+                      onClick={() => {
+                        download("result.txt", resultData);
+                      }}
+                    >
+                      <IoMdDownload />
+                      Download Result
+                    </ToolBtn>
+
+                    <CopyToClipboard
+                      text={resultData}
+                      onCopy={() => {
+                        setCopyResButtonTitle("Copied");
+                      }}
+                    >
+                      <ToolBtn>
+                        <IoCopyOutline />
+                        {copyResButtonTitle}
+                      </ToolBtn>
+                    </CopyToClipboard>
+
+                    <ToolDivider />
+
+                    <ToolBtn onClick={findWord}>
+                      <IoSearch />
+                      Search
+                    </ToolBtn>
+                  </ToolRight>
                 </ToolBar>
 
                 {!sId && (
@@ -1085,80 +1103,7 @@ function App() {
                       order: 3,
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        padding: "5px 8px",
-                        backgroundColor: "#ffffff",
-                        marginLeft: "8px",
-                        borderRadius: "8px",
-                        border: "1px solid #e2e8f0",
-                      }}
-                    >
-                      <div style={{ color: "#334155", fontSize: "14px" }}>
-                        <span style={{ fontSize: "12px" }}>HISTORY</span> :
-                        &nbsp;
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          minWidth: "370px",
-                          maxWidth: "370px",
-                          overflowX: "scroll",
-                          border: "1px solid #e2e8f0",
-                          padding: "2px",
-                          borderRadius: "4px",
-                          position: "relative",
-                        }}
-                        id="myDivId"
-                      >
-                        {Object.keys(tabData).length < 1 && (
-                          <div style={{ color: "#94a3b8" }}>Empty</div>
-                        )}
-                        {getTimeDiff(Object.keys(tabData))
-                          .reverse()
-                          .map(({ timestamp, diffStr }, i) => {
-                            const date = new Date(Number(timestamp));
-                            const time = date.toLocaleString();
-
-                            return (
-                              <div
-                                className="saved-tab"
-                                title={time}
-                                key={i}
-                                onMouseEnter={() => {
-                                  setTimestampHovered(timestamp);
-                                }}
-                                onMouseLeave={() => {
-                                  setTimestampHovered(null);
-                                }}
-                              >
-                                <div
-                                  style={{ cursor: "pointer" }}
-                                  onClick={() => {
-                                    setEditorData(getTabData(timestamp));
-                                    setNewData(getTabData(timestamp));
-                                    deleteTab(timestamp);
-                                  }}
-                                >
-                                  {diffStr}
-                                </div>
-                                <div
-                                  className="icon"
-                                  onClick={() => {
-                                    deleteTab(timestamp);
-                                  }}
-                                >
-                                  <IoMdClose />
-                                </div>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    </div>
+                    
                   </div>
                 )}
               </div>
