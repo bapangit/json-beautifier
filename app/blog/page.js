@@ -41,6 +41,13 @@ const articles = [
     label: "JSON formatting",
   },
   {
+    href: "/blog/how-to-format-json-javascript",
+    title: "How to Format JSON in JavaScript",
+    description:
+      "Use JSON.stringify, JSON.parse, and practical formatting options to make JavaScript data readable and valid.",
+    label: "JavaScript and JSON",
+  },
+  {
     href: "/blog/what-is-json",
     title: "What Is JSON? A Beginner's Guide",
     description:

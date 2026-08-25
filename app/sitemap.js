@@ -51,6 +51,12 @@ export default function sitemap() {
       priority: 0.8,
     },
     {
+      url: `${SITE_URL}/blog/how-to-format-json-javascript`,
+      lastModified: new Date("2026-08-25"),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
       url: `${SITE_URL}/blog/json-vs-xml`,
       lastModified: new Date("2026-08-22"),
       changeFrequency: "monthly",
