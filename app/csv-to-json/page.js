@@ -793,6 +793,9 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                 20
               }px)`,
               width: "100%",
+              borderLeft: "14px solid #adddd7",
+              borderRight: "14px solid #adddd7",
+              boxShadow: "0 0 10px #5eead4",
             }}
           >
             <div>
