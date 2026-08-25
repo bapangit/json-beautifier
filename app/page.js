@@ -426,7 +426,13 @@ const HistoryCard = styled.div`
 function App() {
   const [isBookmarked, bookmark] = useBookmarkStatus();
   const { sId } = useParams();
-  const { tabData, save, getTabData, deleteTab } = SavedTabData();
+  const {
+    tabData,
+    save,
+    getTabData,
+    deleteTab,
+    moveTabToFirst,
+  } = SavedTabData();
 
   const [editorData, setEditorData] = useState("");
 
@@ -1220,8 +1226,7 @@ function App() {
                           title={savedData}
                           onClick={() => {
                             setEditorData(savedData);
-                            setNewData(savedData);
-                            deleteTab(timestamp);
+                            moveTabToFirst(timestamp);
                             setIsHistoryOpen(false);
                           }}
                         >

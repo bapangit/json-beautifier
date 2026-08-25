@@ -61,7 +61,23 @@ export default function SavedTabData() {
     setTabData(keys);
   };
 
-  return { tabData, save, getTabData, deleteTab };
+  const moveTabToFirst = (timestamp) => {
+    const keys = getFromLS();
+    if (!Object.prototype.hasOwnProperty.call(keys, `${timestamp}`)) return;
+
+    const reorderedKeys = Object.keys(keys).filter(
+      (key) => key !== `${timestamp}`,
+    );
+    const reorderedTabs = {};
+    reorderedKeys.forEach((key) => {
+      reorderedTabs[key] = keys[key];
+    });
+    reorderedTabs[timestamp] = keys[timestamp];
+    setToLS(reorderedTabs);
+    setTabData(reorderedTabs);
+  };
+
+  return { tabData, save, getTabData, deleteTab, moveTabToFirst };
 }
 
 function findMin(arr, count) {
