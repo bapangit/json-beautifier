@@ -116,6 +116,22 @@ code {
   border-color: transparent;
 }
 
+.tool-row {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px !important;
+  width: 100%;
+}
+
+.tool-row > * {
+  min-width: 0;
+  margin: 4px !important;
+}
+
+.tool-row button {
+  width: 100%;
+}
+
 .hover-link {
   cursor: pointer;
   &:hover {

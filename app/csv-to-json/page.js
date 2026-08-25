@@ -773,7 +773,53 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
               )}
             </div>
 
-          <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "5px",
+                color: "#12343b",
+              }}
+            >
+              <button type="button" title="Decrease font size" style={{ width: "28px", height: "24px", padding: 0, fontSize: "16px" }} onClick={() => setFontSize(fontSize > 5 ? fontSize - 1 : 5)}>-</button>
+              <Button title={fontSize} />
+              <button type="button" title="Increase font size" style={{ width: "28px", height: "24px", padding: 0, fontSize: "16px" }} onClick={() => setFontSize(fontSize + 1)}>+</button>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "24px",
+              }}
+            >
+              <div
+                className="tool-row"
+                style={{
+                  color: darkTheme ? "grey" : "#FDB813",
+                  fontSize: "22px",
+                  cursor: "pointer",
+                }}
+                onClick={() => setTheme(false)}
+              >
+                &#9728;
+              </div>
+              <div style={{ margin: "0px 5px", height: "24px" }}>
+                <Switch
+                  checkedIcon={false}
+                  uncheckedIcon={false}
+                  height={24}
+                  onChange={setTheme}
+                  checked={darkTheme}
+                />
+              </div>
+              <IoMdMoon
+                color={darkTheme ? "#FDB813" : "grey"}
+                fontSize={20}
+                onClick={() => setTheme(true)}
+              />
+            </div>
             <Menu />
           </div>
         </HeaderContainer>
@@ -904,6 +950,7 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
               }}
             >
               <div
+                className="tool-row"
                 style={{
                   padding: "0px 5px",
                   display: "flex",
@@ -994,6 +1041,7 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                     alignItems: "center",
                     height: "24px",
                     marginTop: "5px",
+                    display: "none",
                   }}
                 >
                   <div
@@ -1091,6 +1139,7 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                         color: "lightgray",
                         fontSize: "14px",
                         marginLeft: "48px",
+                        display: "none",
                       }}
                     >
                       Font Size :
@@ -1099,7 +1148,7 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                 <div
                       style={{
                         marginLeft: "5px",
-                        display: "flex",
+                        display: "none",
                         justifyContent: "center",
                         alignItems: "center",
                         gap: "7px",

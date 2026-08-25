@@ -25,7 +25,7 @@ import { IoMdMoon } from "react-icons/io";
 import { HOME_JSON_LD } from "./seo";
 import Link from "next/link";
 // import BookmarkButton from "@/Components/BookmarkButton";
-import { MdOutlineContentPaste } from "react-icons/md";
+import { MdHistory, MdOutlineContentPaste } from "react-icons/md";
 import { AiOutlineDelete } from "react-icons/ai";
 import { IoSearch } from "react-icons/io5";
 import { IoCopyOutline } from "react-icons/io5";
@@ -203,13 +203,13 @@ const BottomContainer = styled.div`
   height: ${footerContainerHeight}px;
   display: ${(p) => (p.$show || true ? "flex" : "none")};
   flex-direction: column;
-  background-color: #0f2630;
+  background-color: #f1f5f9;
   z-index: 100;
 
   .menu-container {
     position: relative;
     height: 14px;
-    color: white;
+    color: #12343b;
   }
   .menu-item {
     font-weight: 200;
@@ -217,7 +217,7 @@ const BottomContainer = styled.div`
     height: 15px;
     padding: 0px 4px;
     cursor: pointer;
-    color: white;
+    color: #12343b;
     text-decoration: none;
     &:hover {
       text-decoration: underline;
@@ -236,10 +236,11 @@ const BottomContainer = styled.div`
     }
   }
   .saved-tab {
-    border: 1px solid grey;
+    border: 1px solid #cbd5e1;
     border-radius: 4px;
     margin: 0px 5px;
-    color: lightgray;
+    color: #334155;
+    background-color: #ffffff;
     display: flex;
     justify-content: space-between;
     gap: 5px;
@@ -252,17 +253,173 @@ const BottomContainer = styled.div`
     }
     &:hover {
       border-color: #963d32;
-      background-color: #8b4238;
+      background-color: #fbeae7;
     }
   }
   .icon {
     display: flex;
     align-items: center;
     cursor: pointer;
-    border: 1px solid grey;
+    border: 1px solid #cbd5e1;
     :hover {
       color: red;
     }
+  }
+`;
+
+/* Redesigned bottom toolbar — pill buttons, white surface, icon + label */
+const ToolBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  flex-wrap: wrap;
+`;
+
+const ToolBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid ${(p) => (p.$primary ? "#0f9d78" : "#e2e8f0")};
+  background: ${(p) => (p.$primary ? "#0f9d78" : "#ffffff")};
+  color: ${(p) => (p.$primary ? "#ffffff" : "#334155")};
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: ${(p) => (p.$primary ? "#0c8a67" : "#f1f5f9")};
+    border-color: ${(p) => (p.$primary ? "#0c8a67" : "#cbd5e1")};
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  svg {
+    font-size: 16px;
+  }
+`;
+
+const ToolDivider = styled.div`
+  width: 1px;
+  height: 22px;
+  background: #e2e8f0;
+  margin: 0 4px;
+`;
+
+const HistoryOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 38, 48, 0.6);
+`;
+
+const HistoryModal = styled.div`
+  width: min(760px, 100%);
+  max-height: min(620px, 90vh);
+  overflow: hidden;
+  border: 1px solid #adddd7;
+  border-radius: 12px;
+  background: #f8fbfb;
+  box-shadow: 0 14px 40px rgba(15, 38, 48, 0.3);
+`;
+
+const HistoryModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #dbe5e9;
+  color: #12343b;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  button {
+    border: 0;
+    background: transparent;
+    color: #12343b;
+    font-size: 24px;
+    cursor: pointer;
+  }
+`;
+
+const HistoryCards = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 20px;
+`;
+
+const HistoryCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dbe5e9;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(36, 55, 70, 0.08);
+
+  .card-content {
+    flex: 1;
+    min-width: 0;
+    padding: 14px;
+    cursor: pointer;
+  }
+
+  .timestamp {
+    display: block;
+    overflow: hidden;
+    color: #12343b;
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .preview {
+    display: block;
+    overflow: hidden;
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.45;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 6;
+  }
+
+  .card-delete {
+    flex-shrink: 0;
+    width: 100%;
+    padding: 8px 12px;
+    border: 0;
+    border-top: 1px solid #dbe5e9;
+    background: #f8fbfb;
+    color: #963d32;
+    cursor: pointer;
   }
 `;
 
@@ -275,6 +432,7 @@ function App() {
 
   /* Timestamp */
   const [timestampHovered, setTimestampHovered] = useState();
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const tempEditorData = useMemo(() => {
     if (timestampHovered) {
       return getTabData(timestampHovered);
@@ -638,7 +796,76 @@ function App() {
               )}
             </div>
 
-            <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  color: "#12343b",
+                }}
+              >
+                <button
+                  type="button"
+                  title="Decrease font size"
+                  style={{
+                    width: "28px",
+                    height: "24px",
+                    padding: 0,
+                    fontSize: "16px",
+                  }}
+                  onClick={() => setFontSize(fontSize > 5 ? fontSize - 1 : 5)}
+                >
+                  -
+                </button>
+                <Button title={fontSize} />
+                <button
+                  type="button"
+                  title="Increase font size"
+                  style={{
+                    width: "28px",
+                    height: "24px",
+                    padding: 0,
+                    fontSize: "16px",
+                  }}
+                  onClick={() => setFontSize(fontSize + 1)}
+                >
+                  +
+                </button>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "24px",
+                }}
+              >
+                <div
+                  style={{
+                    color: darkTheme ? "grey" : "#FDB813",
+                    fontSize: "22px",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setTheme(false)}
+                >
+                  &#9728;
+                </div>
+                <div style={{ margin: "0px 5px", height: "24px" }}>
+                  <Switch
+                    checkedIcon={false}
+                    uncheckedIcon={false}
+                    height={24}
+                    onChange={setTheme}
+                    checked={darkTheme}
+                  />
+                </div>
+                <IoMdMoon
+                  color={darkTheme ? "#FDB813" : "grey"}
+                  fontSize={20}
+                  onClick={() => setTheme(true)}
+                />
+              </div>
               <Menu />
             </div>
           </HeaderContainer>
@@ -778,43 +1005,28 @@ function App() {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  backgroundColor: "#164e63",
+                  backgroundColor: "#f1f5f9",
+                  width: "100%",
                 }}
               >
-                <div
-                  style={{
-                    padding: "0px 5px",
-                    display: "flex",
-                    gap: "5px",
-                    justifyContent: "left",
-                  }}
-                >
-                  {!sId && (
-                    <>
-                      <div style={{ margin: "4px 4px 2px 4px" }}>
-                        <Button
-                          title="Paste"
-                          onClick={(e) => onClickPaste(e)}
-                          icon={<MdOutlineContentPaste size={40} />}
-                        />
-                      </div>
-                      <div style={{ margin: "4px 4px 2px 4px" }}>
-                        <Button
-                          title="Clear"
-                          onClick={clear}
-                          icon={<AiOutlineDelete size={10} />}
-                        />
-                      </div>
-                    </>
-                  )}
+                <ToolBar>
+                  <ToolBtn onClick={(e) => onClickPaste(e)}>
+                    <MdOutlineContentPaste />
+                    Paste
+                  </ToolBtn>
 
-                  <div style={{ margin: "4px 4px 2px 4px" }}>
-                    <Button
-                      title="Search"
-                      onClick={findWord}
-                      icon={<IoSearch />}
-                    />
-                  </div>
+                  <ToolBtn onClick={clear}>
+                    <AiOutlineDelete />
+                    Clear
+                  </ToolBtn>
+
+                  <ToolBtn
+                    $primary
+                    onClick={() => setIsHistoryOpen(true)}
+                  >
+                    <MdHistory />
+                    History
+                  </ToolBtn>
 
                   <CopyToClipboard
                     text={resultData}
@@ -822,173 +1034,50 @@ function App() {
                       setCopyResButtonTitle("Copied");
                     }}
                   >
-                    <div style={{ margin: "4px 4px 2px 4px" }}>
-                      <Button
-                        title={copyResButtonTitle}
-                        icon={<IoCopyOutline />}
-                      />
-                    </div>
+                    <ToolBtn>
+                      <IoCopyOutline />
+                      {copyResButtonTitle}
+                    </ToolBtn>
                   </CopyToClipboard>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "24px",
-                      marginTop: "5px",
+                  <ToolDivider />
+
+                  <ToolBtn onClick={findWord}>
+                    <IoSearch />
+                    Search
+                  </ToolBtn>
+
+                  <ToolBtn
+                    onClick={() => {
+                      download("result.txt", tempEditorData || editorData);
                     }}
                   >
-                    <div
-                      style={{
-                        color: darkTheme ? "grey" : "#FDB813",
-                        fontSize: "22px",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => {
-                        setTheme(false);
-                      }}
-                    >
-                      &#9728;
-                    </div>
+                    <IoMdDownload />
+                    Download
+                  </ToolBtn>
 
-                    <div style={{ margin: "0px 5px", height: "24px" }}>
-                      <Switch
-                        checkedIcon={false}
-                        uncheckedIcon={false}
-                        height={24}
-                        onChange={(e) => {
-                          setTheme(e);
-                        }}
-                        checked={darkTheme}
-                      />
-                    </div>
+                  <ToolBtn
+                    onClick={() => {
+                      if (resultData) {
+                        setEditorData(() => resultData);
+                        setNewData(resultData);
+                      }
+                    }}
+                  >
+                    <LuMoveHorizontal />
+                    Paste Result
+                  </ToolBtn>
+                </ToolBar>
 
-                    <IoMdMoon
-                      color={darkTheme ? "#FDB813" : "grey"}
-                      fontSize={20}
-                      onClick={() => {
-                        setTheme(true);
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {
+                {!sId && (
                   <div
+                    className="tool-row"
                     style={{
                       display: "flex",
                       marginTop: "2px",
-                      gap: "10px",
-                      height: "28px",
-                      display: "flex",
-                      alignItems: "center",
+                      gap: "15px",
+                      order: 3,
                     }}
-                  >
-                    <div
-                      style={{
-                        margin: "4px 4px 2px 8px",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Button
-                        title="Download"
-                        onClick={() => {
-                          download("result.txt", tempEditorData || editorData);
-                        }}
-                        icon={<IoMdDownload />}
-                      />
-                    </div>
-                    <div>
-                      <Button
-                        title="Paste Result"
-                        onClick={() => {
-                          if (resultData) {
-                            setEditorData(() => resultData);
-                            setNewData(resultData);
-                          }
-                        }}
-                        icon={<LuMoveHorizontal />}
-                      />
-                    </div>
-                    <span
-                      style={{
-                        color: "lightgray",
-                        fontSize: "14px",
-                        marginLeft: "48px",
-                      }}
-                    >
-                      Font Size :
-                    </span>
-
-                    <div
-                      style={{
-                        marginLeft: "5px",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        gap: "7px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          cursor: "pointer",
-                        }}
-                        onClick={() =>
-                          setFontSize(fontSize > 5 ? fontSize - 1 : 5)
-                        }
-                      >
-                        <div
-                          style={{
-                            marginTop: "4px",
-                            marginLeft: "7px",
-
-                            color: "lightgray",
-                            transform:
-                              "rotate(90deg) translateX(-1px) translateY(5px) scaleY(1.2)",
-                          }}
-                        >
-                          &#10073;
-                        </div>
-                      </div>
-                      <div>
-                        <Button
-                          title={fontSize}
-                          style={{
-                            backgroundColor: "white",
-                            height: "20px",
-                            width: "28px",
-                            padding: "0px",
-                          }}
-                        />
-                      </div>
-                      <div
-                        style={{
-                          cursor: "pointer",
-                        }}
-                        onClick={() => setFontSize(fontSize + 1)}
-                      >
-                        <div
-                          style={{
-                            marginTop: "-5px",
-                            marginLeft: "7px",
-
-                            color: "lightgray",
-                            transform:
-                              "rotate(45deg) translateX(-1px) translateY(5px)",
-                          }}
-                        >
-                          {" "}
-                          &#10006;{" "}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                }
-                {!sId && (
-                  <div
-                    style={{ display: "flex", marginTop: "2px", gap: "15px" }}
                   >
                     <div
                       style={{
@@ -996,12 +1085,13 @@ function App() {
                         justifyContent: "center",
                         alignItems: "center",
                         padding: "5px 8px",
-                        backgroundColor: "#12343b",
+                        backgroundColor: "#ffffff",
                         marginLeft: "8px",
-                        borderRadius: "2px",
+                        borderRadius: "8px",
+                        border: "1px solid #e2e8f0",
                       }}
                     >
-                      <div style={{ color: "white", fontSize: "14px" }}>
+                      <div style={{ color: "#334155", fontSize: "14px" }}>
                         <span style={{ fontSize: "12px" }}>HISTORY</span> :
                         &nbsp;
                       </div>
@@ -1012,7 +1102,7 @@ function App() {
                           minWidth: "370px",
                           maxWidth: "370px",
                           overflowX: "scroll",
-                          border: "1px solid grey",
+                          border: "1px solid #e2e8f0",
                           padding: "2px",
                           borderRadius: "4px",
                           position: "relative",
@@ -1020,7 +1110,7 @@ function App() {
                         id="myDivId"
                       >
                         {Object.keys(tabData).length < 1 && (
-                          <div style={{ color: "lightgray" }}>Empty</div>
+                          <div style={{ color: "#94a3b8" }}>Empty</div>
                         )}
                         {getTimeDiff(Object.keys(tabData))
                           .reverse()
@@ -1091,6 +1181,68 @@ function App() {
             )}
           </BottomContainer>
         }
+
+        {isHistoryOpen && (
+          <HistoryOverlay
+            role="presentation"
+            onClick={() => setIsHistoryOpen(false)}
+          >
+            <HistoryModal
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="history-modal-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <HistoryModalHeader>
+                <h2 id="history-modal-title">History</h2>
+                <button
+                  type="button"
+                  aria-label="Close history"
+                  onClick={() => setIsHistoryOpen(false)}
+                >
+                  <IoMdClose />
+                </button>
+              </HistoryModalHeader>
+              <HistoryCards>
+                {Object.keys(tabData).length < 1 && (
+                  <div style={{ color: "#94a3b8" }}>No saved history</div>
+                )}
+                {getTimeDiff(Object.keys(tabData))
+                  .reverse()
+                  .map(({ timestamp, diffStr }) => {
+                    const savedData = getTabData(timestamp);
+                    const time = new Date(Number(timestamp)).toLocaleString();
+
+                    return (
+                      <HistoryCard key={timestamp}>
+                        <div
+                          className="card-content"
+                          title={savedData}
+                          onClick={() => {
+                            setEditorData(savedData);
+                            setNewData(savedData);
+                            deleteTab(timestamp);
+                            setIsHistoryOpen(false);
+                          }}
+                        >
+                          <span className="timestamp">{diffStr}</span>
+                          <span className="preview">{time}</span>
+                          <span className="preview">{savedData}</span>
+                        </div>
+                        <button
+                          className="card-delete"
+                          type="button"
+                          onClick={() => deleteTab(timestamp)}
+                        >
+                          Delete
+                        </button>
+                      </HistoryCard>
+                    );
+                  })}
+              </HistoryCards>
+            </HistoryModal>
+          </HistoryOverlay>
+        )}
 
         {/* {containerViewMode === "H" && (
           <div style={{ height: "20px", backgroundColor: "#505050" }}></div>

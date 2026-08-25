@@ -6,6 +6,9 @@ const Btn = styled.button`
   color: #12343b;
   background-color: #dff5f1;
   padding: 3px 8px;
+  width: 150px;
+  min-width: 150px;
+  flex-shrink: 0;
   height: 28px;
   min-height: 28px;
 
