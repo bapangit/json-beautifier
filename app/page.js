@@ -381,6 +381,7 @@ const HistoryCards = styled.div`
 const HistoryCard = styled.div`
   display: flex;
   flex-direction: column;
+  height: 260px;
   min-width: 0;
   overflow: hidden;
   border: 1px solid #dbe5e9;
@@ -391,6 +392,7 @@ const HistoryCard = styled.div`
   .card-content {
     flex: 1;
     min-width: 0;
+    overflow: hidden;
     padding: 14px;
     cursor: pointer;
   }
@@ -446,6 +448,23 @@ function App() {
   /* Timestamp */
   const [timestampHovered, setTimestampHovered] = useState();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isHistoryOpen) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [isHistoryOpen]);
+
   const tempEditorData = useMemo(() => {
     if (timestampHovered) {
       return getTabData(timestampHovered);
