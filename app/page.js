@@ -937,7 +937,7 @@ function App() {
                 height={`calc(100vh - ${
                   headerContainerHeight + footerContainerHeight - 20
                 }px)`}
-                theme="vs-dark"
+                theme={darkTheme ? "vs-dark" : "vs"}
                 path="file:///json-beautifier/input.json"
                 value={tempEditorData || editorData || ""}
                 onMount={(editor) => {
@@ -978,7 +978,7 @@ function App() {
                   headerContainerHeight + footerContainerHeight - 20
                 }px)`}
                 width="100%"
-                theme="vs-dark"
+                theme={darkTheme ? "vs-dark" : "vs"}
                 path="file:///json-beautifier/result.json"
                 value={resultData || ""}
                 onMount={onMountResultEditor}
