@@ -749,6 +749,7 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
               width: "100%",
               borderLeft: "14px solid #adddd7",
               borderRight: "14px solid #adddd7",
+              borderBottom: "14px solid #adddd7",
               boxShadow: "0 0 10px #5eead4",
             }}
             onDragFinished={(e) => {
