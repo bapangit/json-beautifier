@@ -37,7 +37,7 @@ import { useBookmarkStatus } from "@/Components/CustomStates/CheckBookmark";
 // import BannerAdC from "@/Components/Ads/BannerAdC";
 
 const headerContainerHeight = 70;
-const footerContainerHeight = 110;
+const footerContainerHeight = 80;
 const HOME_NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/blog", label: "Blog" },
@@ -808,7 +808,7 @@ function App() {
             >
               {!isBookmarked && (
                 <button
-                  style={{ padding: "2px 8px" }}
+                  style={{ padding: "2px 8px",cursor:"pointer" }}
                   onClick={() => {
                     const isMac = navigator.platform
                       .toUpperCase()
