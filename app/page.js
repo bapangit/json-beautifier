@@ -1053,7 +1053,7 @@ function App() {
                   </ToolBtn>
 
                   <ToolBtn
-                    $primary
+                    // $primary
                     onClick={() => setIsHistoryOpen(true)}
                   >
                     <MdHistory />
