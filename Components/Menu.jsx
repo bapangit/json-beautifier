@@ -13,6 +13,7 @@ const menuItems = [
   { href: "/xml-to-json", label: "XML to JSON" },
   { href: "/json-to-csv", label: "JSON to CSV" },
   { href: "/csv-to-json", label: "CSV to JSON" },
+  { href: "/gzip-decompressor", label: "GZip Decompress" },
 ];
 
 const MenuButton = styled.button`

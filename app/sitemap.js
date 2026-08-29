@@ -92,5 +92,11 @@ export default function sitemap() {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    {
+      url: `${SITE_URL}/gzip-compress`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
   ];
 }
