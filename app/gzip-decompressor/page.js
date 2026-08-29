@@ -829,8 +829,9 @@ function App() {
                 onClick={() => setTheme(true)}
                 style={{ cursor: "pointer" }}
               />
-              <Menu />
+              
             </div>
+            <Menu />
           </div>
         </HeaderContainer>
 
