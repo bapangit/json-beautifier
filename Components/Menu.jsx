@@ -44,6 +44,7 @@ const MenuButton = styled.button`
 
   svg {
     color: #109dcc;
+
     transition:
       transform 0.2s ease,
       color 0.2s ease;
@@ -108,7 +109,6 @@ const Modal = styled.div`
   flex-direction: column;
 
   overflow: hidden;
-  overflow-x: hidden;
 `;
 
 const ModalHeader = styled.div`
@@ -173,41 +173,11 @@ const CloseButton = styled.button`
   }
 `;
 
-const NavGrid = styled.div`
-  flex: 1;
-
-  min-height: 0;
-
-  overflow-y: auto;
-
-  overscroll-behavior: contain;
-
-  display: grid;
-
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-
-  gap: 16px;
-
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  @media (max-width: 900px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
 const SearchBar = styled.div`
   position: relative;
 
   width: 100%;
-  max-width: 620px;
+  max-width: 780px;
 
   margin: 0 auto 16px;
 
@@ -230,7 +200,9 @@ const SearchInput = styled.input`
 
   min-height: 42px;
 
-  padding: 10px 16px 10px 46px;
+  padding: 10px 46px 10px 46px;
+
+  box-sizing: border-box;
 
   border: 1px solid rgba(255, 255, 255, 0.14);
 
@@ -259,6 +231,55 @@ const SearchInput = styled.input`
 
     box-shadow: 0 0 0 3px rgba(16, 157, 204, 0.18);
   }
+
+  &::-webkit-search-cancel-button {
+    cursor: pointer;
+  }
+`;
+
+const NavGrid = styled.div`
+  flex: 1;
+
+  min-height: 0;
+
+  overflow-y: auto;
+
+  overscroll-behavior: contain;
+
+  display: grid;
+
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  /*
+   * Fixed row height prevents the last row
+   * from becoming unnecessarily tall.
+   */
+  grid-auto-rows: 150px;
+
+  gap: 16px;
+
+  /*
+   * Prevent grid items from stretching vertically.
+   */
+  align-items: start;
+
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    grid-auto-rows: 150px;
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+
+    grid-auto-rows: 120px;
+  }
 `;
 
 const EmptyState = styled.p`
@@ -277,7 +298,14 @@ const NavLink = styled(Link)`
   align-items: center;
   justify-content: center;
 
-  min-height: 150px;
+  /*
+   * Fill the fixed grid row without causing
+   * the grid row itself to stretch.
+   */
+  width: 100%;
+  height: 100%;
+
+  box-sizing: border-box;
 
   padding: 14px;
 
@@ -315,14 +343,20 @@ const NavLink = styled(Link)`
   &:hover {
     transform: translateY(-2px);
 
-    background: linear-gradient(145deg, #ffffff, #e1f3f7);
+    background: linear-gradient(
+      145deg,
+      #ffffff,
+      #e1f3f7
+    );
 
     box-shadow: 0 14px 28px rgba(8, 31, 42, 0.2);
   }
 
-  @media (max-width: 600px) {
-    min-height: 120px;
+  &:active {
+    transform: translateY(0);
+  }
 
+  @media (max-width: 600px) {
     padding: 14px;
 
     font-size: clamp(18px, 6vw, 27px);
@@ -336,21 +370,25 @@ export default function Menu() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredMenuItems = menuItems.filter((item) =>
-    item.label.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+    item.label
+      .toLowerCase()
+      .includes(searchQuery.trim().toLowerCase()),
   );
 
   useEffect(() => {
     if (!isOpen) return;
 
     const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousHtmlOverflow =
+      document.documentElement.style.overflow;
 
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
 
     return () => {
       document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.documentElement.style.overflow =
+        previousHtmlOverflow;
     };
   }, [isOpen]);
 
@@ -362,12 +400,19 @@ export default function Menu() {
         onClick={() => setIsOpen(true)}
       >
         <FaTools size={16} />
+
         <span>Tools</span>
       </MenuButton>
 
       {isOpen && (
-        <ModalBackdrop onClick={() => setIsOpen(false)}>
-          <Modal onClick={(event) => event.stopPropagation()}>
+        <ModalBackdrop
+          onClick={() => setIsOpen(false)}
+        >
+          <Modal
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
             <ModalHeader>
               <h3>Search Tools</h3>
 
@@ -381,7 +426,10 @@ export default function Menu() {
             </ModalHeader>
 
             <SearchBar>
-              <LuSearch size={18} aria-hidden="true" />
+              <LuSearch
+                size={18}
+                aria-hidden="true"
+              />
 
               <SearchInput
                 type="search"
@@ -406,7 +454,9 @@ export default function Menu() {
                   </NavLink>
                 ))
               ) : (
-                <EmptyState>No tools found.</EmptyState>
+                <EmptyState>
+                  No tools found.
+                </EmptyState>
               )}
             </NavGrid>
           </Modal>

@@ -670,6 +670,7 @@ function App() {
                   color={darkTheme ? "#FDB813" : "grey"}
                   fontSize={20}
                   onClick={() => setTheme(true)}
+                  style={{ cursor: "pointer" }}
                 />
               </div>
               <Menu />
