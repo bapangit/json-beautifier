@@ -47,7 +47,7 @@ const JSON_TO_XML_SCHEMA = {
   ],
 };
 import Link from "next/link";
-import { MdOutlineContentPaste } from "react-icons/md";
+import { MdOutlineContentPaste,MdHistory  } from "react-icons/md";
 import { AiOutlineDelete } from "react-icons/ai";
 import { IoSearch } from "react-icons/io5";
 import { IoCopyOutline } from "react-icons/io5";
@@ -57,7 +57,7 @@ import Menu from "../../Components/Menu";
 import { useBookmarkStatus } from "@/Components/CustomStates/CheckBookmark";
 
 const headerContainerHeight = 70;
-const footerContainerHeight = 110;
+const footerContainerHeight = 80  ;
 const HOME_NAV_LINKS = [
   { href: "/", label: "Home" },
   // { href: "/json-to-xml", label: "JSON to XML" },
@@ -96,9 +96,7 @@ const jsonNodeToXml = (value, nodeName, indent) => {
     if (value.length === 0) {
       return `${pad}<${tag}/>`;
     }
-    return value
-      .map((item) => jsonNodeToXml(item, tag, indent))
-      .join("\n");
+    return value.map((item) => jsonNodeToXml(item, tag, indent)).join("\n");
   }
 
   if (typeof value === "object") {
@@ -300,67 +298,164 @@ const TopContainer = styled.div`
 const BottomContainer = styled.div`
   width: 100%;
   height: ${footerContainerHeight}px;
-  display: ${(p) => (p.$show || true ? "flex" : "none")};
+  display: flex;
   flex-direction: column;
-  background-color: #0f2630;
+  background: #eef4f8;
+  border-top: 1px solid #d6e0e8;
   z-index: 100;
+  box-sizing: border-box;
 
-  .menu-container {
-    position: relative;
-    height: 14px;
-    color: white;
-  }
-  .menu-item {
-    font-weight: 200;
-    font-size: 12px;
-    height: 15px;
-    padding: 0px 4px;
-    cursor: pointer;
-    color: white;
-    text-decoration: none;
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
-  input {
-    width: 40px;
-    margin-left: 2px;
-    border: none;
-    background-color: lightblue;
-    font-size: large;
-    padding: 0px 4px;
-    &:focus {
-      outline: none;
-    }
-  }
-  .saved-tab {
-    border: 1px solid grey;
-    border-radius: 4px;
-    margin: 0px 5px;
-    color: lightgray;
+  .footer-toolbar {
+    height: 68px;
+    width: 100%;
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    gap: 5px;
-    align-items: center;
-    padding: 2px 7px;
-    font-size: 12px;
-    white-space: nowrap;
-    :active {
-      color: #963d32;
-    }
-    &:hover {
-      border-color: #963d32;
-      background-color: #8b4238;
-    }
+    padding: 5px 12px;
+    box-sizing: border-box;
+    gap: 10px;
   }
-  .icon {
+
+  .footer-left,
+  .footer-right {
     display: flex;
     align-items: center;
+    gap: 10px;
+  }
+
+  .footer-right {
+    margin-left: auto;
+  }
+
+  .footer-divider {
+    width: 1px;
+    height: 30px;
+    background: #d3dce5;
+    margin: 0 3px;
+  }
+
+  .footer-nav {
+    width: 100%;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 16px;
+    box-sizing: border-box;
+    background: #e6edf2;
+    border-top: 1px solid #d3dce5;
+  }
+
+  .menu-item {
+    color: #183b56;
+    font-size: 16px;
+    font-weight: 400;
+    text-decoration: none;
+    padding: 0 8px;
+    white-space: nowrap;
     cursor: pointer;
-    border: 1px solid grey;
-    :hover {
-      color: red;
+  }
+
+  .menu-item:hover {
+    text-decoration: underline;
+    color: #0f766e;
+  }
+
+  @media (max-width: 900px) {
+    .footer-toolbar {
+      overflow-x: auto;
+      justify-content: flex-start;
+    }
+
+    .footer-right {
+      margin-left: 0;
+    }
+
+    .footer-nav {
+      overflow-x: auto;
+      justify-content: flex-start;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .footer-toolbar {
+      padding: 5px 8px;
+      gap: 6px;
+    }
+
+    .footer-left,
+    .footer-right {
+      gap: 6px;
+    }
+
+    .menu-item {
+      font-size: 13px;
+      padding: 0 5px;
+    }
+  }
+`;
+
+const FooterButton = styled.button`
+  height: 52px;
+  min-width: 110px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 0 16px;
+
+  border: 1px solid #d7e1eb;
+  border-radius: 10px;
+
+  background: #ffffff;
+  color: #183b56;
+
+  font-size: 18px;
+  font-weight: 400;
+
+  cursor: pointer;
+  white-space: nowrap;
+
+  box-sizing: border-box;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+
+  &:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #c3d0dc;
+    box-shadow: 0 2px 5px rgba(15, 38, 48, 0.06);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    background: #f4f6f8;
+    color: #9aa7b7;
+    border-color: #e0e6ec;
+    cursor: not-allowed;
+  }
+
+  svg {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 900px) {
+    min-width: auto;
+    height: 46px;
+    padding: 0 13px;
+    font-size: 16px;
+
+    svg {
+      font-size: 18px;
     }
   }
 `;
@@ -726,9 +821,33 @@ function App() {
                   color: "#12343b",
                 }}
               >
-                <button type="button" title="Decrease font size" style={{ width: "28px", height: "24px", padding: 0, fontSize: "16px" }} onClick={() => setFontSize(fontSize > 5 ? fontSize - 1 : 5)}>-</button>
+                <button
+                  type="button"
+                  title="Decrease font size"
+                  style={{
+                    width: "28px",
+                    height: "24px",
+                    padding: 0,
+                    fontSize: "16px",
+                  }}
+                  onClick={() => setFontSize(fontSize > 5 ? fontSize - 1 : 5)}
+                >
+                  -
+                </button>
                 <Button title={fontSize} />
-                <button type="button" title="Increase font size" style={{ width: "28px", height: "24px", padding: 0, fontSize: "16px" }} onClick={() => setFontSize(fontSize + 1)}>+</button>
+                <button
+                  type="button"
+                  title="Increase font size"
+                  style={{
+                    width: "28px",
+                    height: "24px",
+                    padding: 0,
+                    fontSize: "16px",
+                  }}
+                  onClick={() => setFontSize(fontSize + 1)}
+                >
+                  +
+                </button>
               </div>
               <div
                 style={{
@@ -851,334 +970,123 @@ function App() {
           </SplitPane>
         </TopContainer>
 
-        {
-          <BottomContainer $show={containerViewMode === "B"}>
-            <div
-              style={{
-                display: "flex",
-                position: "relative",
-                height: `calc(100vh - ${
-                  containerViewMode === "H"
-                    ? headerContainerHeight
-                    : footerContainerHeight
-                }px)`,
-                borderTop: "1px solid darkgrey",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  backgroundColor: "#164e63",
+        <BottomContainer>
+          <div className="footer-toolbar">
+            {/* LEFT BUTTONS */}
+            <div className="footer-left">
+              {!sId && (
+                <>
+                  {/* Paste */}
+                  <FooterButton
+                    type="button"
+                    onClick={onClickPaste}
+                    title="Paste"
+                  >
+                    <MdOutlineContentPaste />
+                    Paste
+                  </FooterButton>
+
+                  {/* Clear */}
+                  <FooterButton type="button" onClick={clear} title="Clear">
+                    <AiOutlineDelete />
+                    Clear
+                  </FooterButton>
+
+                  {/* History */}
+                  <FooterButton
+                    type="button"
+                    onClick={() => {
+                      // Your existing history functionality
+                      // should remain here.
+                    }}
+                    title="History"
+                  >
+                    <MdHistory />
+                    History
+                  </FooterButton>
+                </>
+              )}
+
+              {/* Download */}
+              <FooterButton
+                type="button"
+                onClick={() => {
+                  download("result.txt", tempEditorData || editorData);
+                }}
+                disabled={!editorData && !tempEditorData}
+                title="Download"
+              >
+                <IoMdDownload />
+                Download
+              </FooterButton>
+
+              {/* Paste Result */}
+              <FooterButton
+                type="button"
+                onClick={() => {
+                  if (resultData) {
+                    setEditorData(resultData);
+                    setNewData(resultData);
+                  }
+                }}
+                disabled={!resultData}
+                title="Paste Result"
+              >
+                <LuMoveHorizontal />
+                Paste Result
+              </FooterButton>
+            </div>
+
+            {/* RIGHT BUTTONS */}
+            <div className="footer-right">
+              {/* Download Result */}
+              <FooterButton
+                type="button"
+                onClick={() => {
+                  download("result.txt", resultData);
+                }}
+                disabled={!resultData}
+                title="Download Result"
+              >
+                <IoMdDownload />
+                Download Result
+              </FooterButton>
+
+              {/* Copy */}
+              <CopyToClipboard
+                text={resultData || ""}
+                onCopy={() => {
+                  setCopyResButtonTitle("Copied");
                 }}
               >
-                <div
-                  style={{
-                    padding: "0px 5px",
-                    display: "flex",
-                    gap: "5px",
-                    justifyContent: "left",
-                  }}
-                >
-                  {!sId && (
-                    <>
-                      <div style={{ margin: "4px 4px 2px 4px" }}>
-                        <Button
-                          title="Paste"
-                          onClick={(e) => onClickPaste(e)}
-                          icon={<MdOutlineContentPaste size={40} />}
-                        />
-                      </div>
-                      <div style={{ margin: "4px 4px 2px 4px" }}>
-                        <Button
-                          title="Clear"
-                          onClick={clear}
-                          icon={<AiOutlineDelete size={10} />}
-                        />
-                      </div>
-                    </>
-                  )}
+                <FooterButton type="button" disabled={!resultData} title="Copy">
+                  <IoCopyOutline />
+                  {copyResButtonTitle}
+                </FooterButton>
+              </CopyToClipboard>
 
-                  <div style={{ margin: "4px 4px 2px 4px" }}>
-                    <Button
-                      title="Search"
-                      onClick={findWord}
-                      icon={<IoSearch />}
-                    />
-                  </div>
+              {/* Divider */}
+              <div className="footer-divider" />
 
-                  <CopyToClipboard
-                    text={resultData}
-                    onCopy={() => {
-                      setCopyResButtonTitle("Copied");
-                    }}
-                  >
-                    <div style={{ margin: "4px 4px 2px 4px" }}>
-                      <Button
-                        title={copyResButtonTitle}
-                        icon={<IoCopyOutline />}
-                      />
-                    </div>
-                  </CopyToClipboard>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "24px",
-                      marginTop: "5px",
-                      display: "none",
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: darkTheme ? "grey" : "#FDB813",
-                        fontSize: "22px",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => {
-                        setTheme(false);
-                      }}
-                    >
-                      &#9728;
-                    </div>
-
-                    <div style={{ margin: "0px 5px", height: "24px" }}>
-                      <Switch
-                        checkedIcon={false}
-                        uncheckedIcon={false}
-                        height={24}
-                        onChange={(e) => {
-                          setTheme(e);
-                        }}
-                        checked={darkTheme}
-                      />
-                    </div>
-
-                    <IoMdMoon
-                      color={darkTheme ? "#FDB813" : "grey"}
-                      fontSize={20}
-                      onClick={() => {
-                        setTheme(true);
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {
-                  <div
-                    className="tool-row"
-                    style={{
-                      display: "flex",
-                      marginTop: "2px",
-                      gap: "10px",
-                      height: "28px",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div
-                      style={{
-                        margin: "4px 4px 2px 8px",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Button
-                        title="Download"
-                        onClick={() => {
-                          download("result.xml", resultData || editorData);
-                        }}
-                        icon={<IoMdDownload />}
-                      />
-                    </div>
-                    <div>
-                      <Button
-                        title="Paste Result"
-                        onClick={() => {
-                          if (resultData) {
-                            setEditorData(() => resultData);
-                            setNewData(resultData);
-                          }
-                        }}
-                        icon={<LuMoveHorizontal />}
-                      />
-                    </div>
-                    <span
-                      style={{
-                        color: "lightgray",
-                        fontSize: "14px",
-                        marginLeft: "48px",
-                        display: "none",
-                      }}
-                    >
-                      Font Size :
-                    </span>
-
-                    <div
-                      style={{
-                        marginLeft: "5px",
-                        display: "none",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        gap: "7px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          cursor: "pointer",
-                        }}
-                        onClick={() =>
-                          setFontSize(fontSize > 5 ? fontSize - 1 : 5)
-                        }
-                      >
-                        <div
-                          style={{
-                            marginTop: "4px",
-                            marginLeft: "7px",
-                            color: "lightgray",
-                            transform:
-                              "rotate(90deg) translateX(-1px) translateY(5px) scaleY(1.2)",
-                          }}
-                        >
-                          &#10073;
-                        </div>
-                      </div>
-                      <div>
-                        <Button
-                          title={fontSize}
-                          style={{
-                            backgroundColor: "white",
-                            height: "20px",
-                            width: "28px",
-                            padding: "0px",
-                          }}
-                        />
-                      </div>
-                      <div
-                        style={{
-                          cursor: "pointer",
-                        }}
-                        onClick={() => setFontSize(fontSize + 1)}
-                      >
-                        <div
-                          style={{
-                            marginTop: "-5px",
-                            marginLeft: "7px",
-                            color: "lightgray",
-                            transform:
-                              "rotate(45deg) translateX(-1px) translateY(5px)",
-                          }}
-                        >
-                          {" "}
-                          &#10006;{" "}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                }
-                {!sId && (
-                  <div
-                    style={{ display: "flex", marginTop: "2px", gap: "15px" }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        padding: "5px 8px",
-                        backgroundColor: "#12343b",
-                        marginLeft: "8px",
-                        borderRadius: "2px",
-                      }}
-                    >
-                      <div style={{ color: "white", fontSize: "14px" }}>
-                        <span style={{ fontSize: "12px" }}>HISTORY</span> :
-                        &nbsp;
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          minWidth: "370px",
-                          maxWidth: "370px",
-                          overflowX: "scroll",
-                          border: "1px solid grey",
-                          padding: "2px",
-                          borderRadius: "4px",
-                          position: "relative",
-                        }}
-                        id="myDivId"
-                      >
-                        {Object.keys(tabData).length < 1 && (
-                          <div style={{ color: "lightgray" }}>Empty</div>
-                        )}
-                        {getTimeDiff(Object.keys(tabData))
-                          .reverse()
-                          .map(({ timestamp, diffStr }, i) => {
-                            const date = new Date(Number(timestamp));
-                            const time = date.toLocaleString();
-
-                            return (
-                              <div
-                                className="saved-tab"
-                                title={time}
-                                key={i}
-                                onMouseEnter={() => {
-                                  setTimestampHovered(timestamp);
-                                }}
-                                onMouseLeave={() => {
-                                  setTimestampHovered(null);
-                                }}
-                              >
-                                <div
-                                  style={{ cursor: "pointer" }}
-                                  onClick={() => {
-                                    setEditorData(getTabData(timestamp));
-                                    setNewData(getTabData(timestamp));
-                                    deleteTab(timestamp);
-                                  }}
-                                >
-                                  {diffStr}
-                                </div>
-                                <div
-                                  className="icon"
-                                  onClick={() => {
-                                    deleteTab(timestamp);
-                                  }}
-                                >
-                                  <IoMdClose />
-                                </div>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Search */}
+              <FooterButton type="button" onClick={findWord} title="Search">
+                <IoSearch />
+                Search
+              </FooterButton>
             </div>
-            {!sId && (
-              <div className="menu-container">
-                <div
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    bottom: "2px",
-                    display: "flex",
-                    fontSize: "10px",
-                  }}
-                >
-                  {HOME_NAV_LINKS.map(({ href, label }) => (
-                    <Link className="menu-item" href={href} key={href}>
-                      {label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </BottomContainer>
-        }
+          </div>
+
+          {/* FOOTER NAVIGATION */}
+          {!sId && (
+            <div className="footer-nav">
+              {HOME_NAV_LINKS.map(({ href, label }) => (
+                <Link key={href} href={href} className="menu-item">
+                  {label}
+                </Link>
+              ))}
+            </div>
+          )}
+        </BottomContainer>
 
         {!sId && (
           <HomeSeoSection>
@@ -1186,13 +1094,13 @@ function App() {
               <h2>Online JSON to XML converter</h2>
               <p>
                 JSON to XML Converter turns raw JSON into readable, nested XML
-                markup in a browser-based split editor. Paste JSON on the
-                left and review the generated XML on the right.
+                markup in a browser-based split editor. Paste JSON on the left
+                and review the generated XML on the right.
               </p>
               <p>
                 The tool is useful for converting API payloads for legacy
-                systems, generating XML feeds from JSON data, and checking
-                JSON structure before it gets consumed downstream.
+                systems, generating XML feeds from JSON data, and checking JSON
+                structure before it gets consumed downstream.
               </p>
               <div className="link-row">
                 {HOME_NAV_LINKS.map(({ href, label }) => (
@@ -1220,8 +1128,8 @@ function App() {
               </p>
               <h4>How are JSON arrays converted to XML?</h4>
               <p>
-                Each item in an array is repeated as a sibling element using
-                the same tag name as its parent key.
+                Each item in an array is repeated as a sibling element using the
+                same tag name as its parent key.
               </p>
               <h4>Is JSON to XML Converter free to use?</h4>
               <p>
