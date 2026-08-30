@@ -539,6 +539,11 @@ function App() {
 
   /*
    * Convert JSON string to formatted XML.
+   *
+   * Rules:
+   * - Single top-level key -> that key becomes the XML root element.
+   * - Multiple top-level keys -> wrapped under a default <root> element.
+   * - Root-level array -> wrapped under <root>, each item becomes <item>.
    */
   const convertJsonToXml = (jsonString) => {
     if (!jsonString || !jsonString.trim()) {
@@ -556,38 +561,67 @@ function App() {
 
       if (
         parsedJson === null ||
-        typeof parsedJson !== "object" ||
-        Array.isArray(parsedJson)
+        typeof parsedJson !== "object"
       ) {
         throw new Error(
-          "JSON must contain a single root object for XML conversion."
+          "JSON must contain an object or array for XML conversion."
         );
       }
 
-      const rootKeys = Object.keys(
-        parsedJson
-      );
+      let xml;
 
-      if (rootKeys.length === 0) {
-        throw new Error(
-          "JSON must contain at least one root element."
+      if (Array.isArray(parsedJson)) {
+        /*
+         * Root-level arrays: wrap items under a default <root> element.
+         */
+        if (parsedJson.length === 0) {
+          throw new Error(
+            "JSON array must contain at least one item."
+          );
+        }
+
+        const items = parsedJson
+          .map((item) =>
+            jsonValueToXml("item", item, 1)
+          )
+          .join("\n");
+
+        xml =
+          `<?xml version="1.0" encoding="UTF-8"?>\n<root>\n` +
+          items +
+          `\n</root>`;
+      } else {
+        const rootKeys = Object.keys(
+          parsedJson
         );
+
+        if (rootKeys.length === 0) {
+          throw new Error(
+            "JSON must contain at least one root element."
+          );
+        }
+
+        if (rootKeys.length === 1) {
+          /*
+           * Single top-level key becomes the XML root element directly.
+           */
+          const rootKey = rootKeys[0];
+
+          xml =
+            `<?xml version="1.0" encoding="UTF-8"?>\n` +
+            jsonValueToXml(
+              rootKey,
+              parsedJson[rootKey]
+            );
+        } else {
+          /*
+           * Multiple top-level keys: wrap them under a default <root> element.
+           */
+          xml =
+            `<?xml version="1.0" encoding="UTF-8"?>\n` +
+            jsonValueToXml("root", parsedJson);
+        }
       }
-
-      if (rootKeys.length > 1) {
-        throw new Error(
-          "JSON must contain a single root element for valid XML."
-        );
-      }
-
-      const rootKey = rootKeys[0];
-
-      const xml =
-        `<?xml version="1.0" encoding="UTF-8"?>\n` +
-        jsonValueToXml(
-          rootKey,
-          parsedJson[rootKey]
-        );
 
       setResultData(xml);
 
