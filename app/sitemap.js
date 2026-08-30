@@ -93,7 +93,13 @@ export default function sitemap() {
       priority: 0.9,
     },
     {
-      url: `${SITE_URL}/gzip-compress`,
+      url: `${SITE_URL}/gzip-compressor`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/gzip-decompressor`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
