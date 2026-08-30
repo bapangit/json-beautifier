@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
+import CopyToClipboard from "react-copy-to-clipboard";
 import { IoMdClose, IoMdMoon, IoMdDownload } from "react-icons/io";
 import {
   MdHistory,
@@ -12,7 +13,6 @@ import {
 } from "react-icons/md";
 import { AiOutlineDelete } from "react-icons/ai";
 import { IoSearch, IoCopyOutline } from "react-icons/io5";
-import { LuMoveHorizontal } from "react-icons/lu";
 import Link from "next/link";
 import Menu from "@/Components/Menu";
 import Button from "@/Components/Buttons/Button";
@@ -244,65 +244,25 @@ const ToolRight = styled.div`
   }
 `;
 
-const ResultPanel = styled.div`
-  height: 100%;
-  width: 100%;
-  overflow: auto;
-  background: ${(p) =>
-    p.$dark ? "#1e1e1e" : "#ffffff"};
-  color: ${(p) =>
-    p.$dark ? "#d4d4d4" : "#1f2937"};
-  font-family:
-    Arial, Helvetica, sans-serif;
-`;
-
-const ResultInner = styled.div`
-  padding: 28px;
-  max-width: 700px;
-`;
-
-const ResultTitle = styled.h2`
-  margin: 0 0 22px;
-  font-size: 22px;
-  font-weight: 600;
-`;
-
-const StatCard = styled.div`
-  padding: 18px;
-  margin-bottom: 14px;
-  border: 1px solid
-    ${(p) =>
-      p.$dark ? "#3f3f46" : "#e2e8f0"};
-  border-radius: 10px;
-  background: ${(p) =>
-    p.$dark ? "#252526" : "#f8fafc"};
-
-  .label {
-    font-size: 13px;
-    color: ${(p) =>
-      p.$dark ? "#a1a1aa" : "#64748b"};
-    margin-bottom: 6px;
-  }
-
-  .value {
-    font-size: 22px;
-    font-weight: 600;
-    color: ${(p) =>
-      p.$dark ? "#f1f5f9" : "#12343b"};
-  }
-`;
-
-const SuccessMessage = styled.div`
-  padding: 12px 14px;
+const StatsBox = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 12px;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background: ${(p) =>
-    p.$dark ? "#123b32" : "#ecfdf5"};
-  border: 1px solid
-    ${(p) =>
-      p.$dark ? "#17634f" : "#a7f3d0"};
-  color: ${(p) =>
-    p.$dark ? "#a7f3d0" : "#065f46"};
-  margin-bottom: 18px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  white-space: nowrap;
+
+  strong {
+    color: #0f766e;
+  }
+
+  @media (max-width: 650px) {
+    display: none;
+  }
 `;
 
 const HistoryOverlay = styled.div`
@@ -350,10 +310,7 @@ const HistoryModalHeader = styled.div`
 
 const HistoryCards = styled.div`
   display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(180px, 1fr)
-  );
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px;
   max-height: 520px;
   overflow-y: auto;
@@ -363,7 +320,7 @@ const HistoryCards = styled.div`
 const HistoryCard = styled.div`
   display: flex;
   flex-direction: column;
-  height: 240px;
+  height: 260px;
   min-width: 0;
   overflow: hidden;
   border: 1px solid #dbe5e9;
@@ -391,14 +348,14 @@ const HistoryCard = styled.div`
   .preview {
     display: block;
     overflow: hidden;
-    margin-top: 8px;
+    margin-top: 6px;
     color: #64748b;
     font-size: 12px;
     line-height: 1.45;
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 8;
+    -webkit-line-clamp: 6;
   }
 
   .card-delete {
@@ -414,203 +371,155 @@ const HistoryCard = styled.div`
 `;
 
 function App() {
-  const [editorData, setEditorData] =
-    useState("");
+  const [editorData, setEditorData] = useState("");
+  const [resultData, setResultData] = useState("");
+  const [error, setError] = useState("");
 
-  const [compressedData, setCompressedData] =
-    useState(null);
+  const [darkTheme, setDarkTheme] = useState(false);
+  const [fontSize, setFontSize] = useState(14);
 
-  const [error, setError] =
-    useState("");
+  const [history, setHistory] = useState([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  const [darkTheme, setDarkTheme] =
-    useState(false);
+  const [editor, setEditor] = useState(null);
+  const [monaco, setMonaco] = useState(null);
 
-  const [fontSize, setFontSize] =
-    useState(14);
+  const [copyResButtonTitle, setCopyResButtonTitle] =
+    useState("Copy");
 
-  const [history, setHistory] =
-    useState([]);
-
-  const [isHistoryOpen, setIsHistoryOpen] =
-    useState(false);
-
-  const [editor, setEditor] =
-    useState(null);
-
-  const [monaco, setMonaco] =
-    useState(null);
+  const [originalSize, setOriginalSize] = useState(0);
+  const [compressedSize, setCompressedSize] = useState(0);
+  const [compressionRatio, setCompressionRatio] = useState(0);
 
   /*
-   * Convert ArrayBuffer to Blob
-   * and create a downloadable GZIP file.
+   * Convert Uint8Array to Base64.
    */
-  const compressGzip = async (
-    text
-  ) => {
-    if (
-      !text ||
-      !text.trim()
-    ) {
-      setCompressedData(null);
+  const uint8ArrayToBase64 = (bytes) => {
+    let binary = "";
+
+    const chunkSize = 0x8000;
+
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(
+        i,
+        Math.min(i + chunkSize, bytes.length)
+      );
+
+      binary += String.fromCharCode(...chunk);
+    }
+
+    return btoa(binary);
+  };
+
+  /*
+   * Compress text using browser-native GZip.
+   */
+  const gzipCompress = async (text) => {
+    if (!text || !text.trim()) {
+      setResultData("");
       setError("");
+      setOriginalSize(0);
+      setCompressedSize(0);
+      setCompressionRatio(0);
       return;
     }
 
     try {
       setError("");
 
-      /*
-       * TextEncoder converts the input
-       * string into UTF-8 bytes.
-       */
-      const encoder =
-        new TextEncoder();
-
-      const inputBytes =
-        encoder.encode(text);
-
-      /*
-       * CompressionStream is supported
-       * by modern browsers.
-       */
-      if (
-        typeof CompressionStream ===
-        "undefined"
-      ) {
+      if (!("CompressionStream" in window)) {
         throw new Error(
-          "GZIP compression is not supported by this browser."
+          "GZip compression is not supported by this browser."
         );
       }
 
-      const stream =
-        new CompressionStream(
-          "gzip"
+      const encoder = new TextEncoder();
+
+      const inputBytes = encoder.encode(text);
+
+      const stream = new Blob([inputBytes])
+        .stream()
+        .pipeThrough(
+          new CompressionStream("gzip")
         );
-
-      const writer =
-        stream.writable.getWriter();
-
-      await writer.write(
-        inputBytes
-      );
-
-      await writer.close();
 
       const compressedBuffer =
-        await new Response(
-          stream.readable
-        ).arrayBuffer();
+        await new Response(stream).arrayBuffer();
 
-      const compressedBlob =
-        new Blob(
-          [compressedBuffer],
-          {
-            type:
-              "application/gzip",
-          }
-        );
+      const compressedBytes =
+        new Uint8Array(compressedBuffer);
 
-      const originalSize =
-        inputBytes.byteLength;
+      const base64 =
+        uint8ArrayToBase64(compressedBytes);
 
-      const compressedSize =
-        compressedBuffer.byteLength;
+      setResultData(base64);
 
-      const savedBytes =
-        originalSize -
-        compressedSize;
+      setOriginalSize(inputBytes.byteLength);
+      setCompressedSize(compressedBytes.byteLength);
 
-      const compressionRatio =
-        originalSize > 0
+      const ratio =
+        inputBytes.byteLength > 0
           ? (
               (1 -
-                compressedSize /
-                  originalSize) *
+                compressedBytes.byteLength /
+                  inputBytes.byteLength) *
               100
             )
           : 0;
 
-      const result = {
-        blob: compressedBlob,
-        originalSize,
-        compressedSize,
-        savedBytes,
-        compressionRatio,
-        time: new Date().toLocaleString(),
-      };
-
-      setCompressedData(
-        result
+      setCompressionRatio(
+        Math.max(0, ratio)
       );
 
-      saveToHistory(
-        text,
-        result
-      );
+      saveToHistory(text, base64);
     } catch (err) {
-      setCompressedData(
-        null
-      );
+      setResultData("");
+      setOriginalSize(0);
+      setCompressedSize(0);
+      setCompressionRatio(0);
 
       setError(
         err?.message ||
-          "Unable to compress the data using GZIP."
+          "Unable to compress the input using GZip."
       );
     }
   };
 
   /*
-   * Save history.
-   *
-   * Blob itself is not stored in localStorage.
-   * Only the original input and compression
-   * statistics are stored.
+   * Save compression history.
    */
   const saveToHistory = (
     input,
-    result
+    output
   ) => {
-    if (!input || !result) {
-      return;
-    }
+    if (!input || !output) return;
 
     const item = {
       id: Date.now(),
       input,
-      originalSize:
-        result.originalSize,
-      compressedSize:
-        result.compressedSize,
-      compressionRatio:
-        result.compressionRatio,
-      time:
-        result.time,
+      output,
+      time: new Date().toLocaleString(),
     };
 
-    setHistory(
-      (previous) => {
-        const updated = [
-          item,
-          ...previous,
-        ].slice(0, 20);
+    setHistory((previous) => {
+      const updated = [
+        item,
+        ...previous,
+      ].slice(0, 20);
 
-        try {
-          localStorage.setItem(
-            "gzip-compressor-history",
-            JSON.stringify(
-              updated
-            )
-          );
-        } catch {}
+      try {
+        localStorage.setItem(
+          "gzip-compressor-history",
+          JSON.stringify(updated)
+        );
+      } catch {}
 
-        return updated;
-      }
-    );
+      return updated;
+    });
   };
 
   /*
-   * Load history.
+   * Load saved history.
    */
   useEffect(() => {
     try {
@@ -630,97 +539,113 @@ function App() {
   /*
    * Paste text.
    */
-  const onClickPaste =
-    async () => {
-      try {
-        const text =
-          await navigator.clipboard.readText();
+  const onClickPaste = async () => {
+    try {
+      const text =
+        await navigator.clipboard.readText();
 
-        if (text) {
-          setEditorData(text);
-          compressGzip(text);
-        }
-      } catch {
-        setError(
-          "Unable to read clipboard."
-        );
-      }
-    };
-
-  /*
-   * Upload a text/JSON file.
-   */
-  const handleFileUpload =
-    async (event) => {
-      const file =
-        event.target.files?.[0];
-
-      if (!file) return;
-
-      try {
-        setError("");
-
-        const text =
-          await file.text();
-
-        if (!text.trim()) {
-          throw new Error(
-            "The selected file is empty."
-          );
-        }
-
+      if (text) {
         setEditorData(text);
-
-        compressGzip(
-          text
-        );
-      } catch (err) {
-        setCompressedData(
-          null
-        );
-
-        setError(
-          err?.message ||
-            "Unable to read the selected file."
-        );
+        await gzipCompress(text);
       }
-
-      event.target.value = "";
-    };
-
-  /*
-   * Clear.
-   */
-  const clear = () => {
-    setEditorData("");
-    setCompressedData(null);
-    setError("");
+    } catch {
+      setError(
+        "Unable to read clipboard."
+      );
+    }
   };
 
   /*
-   * Download GZIP file.
+   * Upload text file.
    */
-  const downloadGzip =
-    () => {
-      if (
-        !compressedData?.blob
-      ) {
-        return;
+  const handleFileUpload = async (
+    event
+  ) => {
+    const file =
+      event.target.files?.[0];
+
+    if (!file) return;
+
+    try {
+      setError("");
+
+      const text =
+        await file.text();
+
+      if (!text.trim()) {
+        throw new Error(
+          "The selected file is empty."
+        );
       }
 
-      const url =
-        URL.createObjectURL(
-          compressedData.blob
+      setEditorData(text);
+
+      await gzipCompress(text);
+    } catch (err) {
+      setResultData("");
+
+      setError(
+        err?.message ||
+          "Unable to read the selected file."
+      );
+    }
+
+    event.target.value = "";
+  };
+
+  /*
+   * Clear everything.
+   */
+  const clear = () => {
+    setEditorData("");
+    setResultData("");
+    setError("");
+    setOriginalSize(0);
+    setCompressedSize(0);
+    setCompressionRatio(0);
+  };
+
+  /*
+   * Download actual GZip binary.
+   */
+  const downloadGzip = async (
+    filename = "compressed.gz"
+  ) => {
+    if (!resultData) return;
+
+    try {
+      const binaryString =
+        atob(resultData);
+
+      const bytes =
+        new Uint8Array(
+          binaryString.length
         );
+
+      for (
+        let i = 0;
+        i < binaryString.length;
+        i++
+      ) {
+        bytes[i] =
+          binaryString.charCodeAt(i);
+      }
+
+      const blob = new Blob(
+        [bytes],
+        {
+          type: "application/gzip",
+        }
+      );
+
+      const url =
+        URL.createObjectURL(blob);
 
       const element =
-        document.createElement(
-          "a"
-        );
+        document.createElement("a");
 
       element.href = url;
-      element.download =
-        "compressed.gz";
+      element.download = filename;
 
       document.body.appendChild(
         element
@@ -732,40 +657,109 @@ function App() {
         element
       );
 
-      URL.revokeObjectURL(
-        url
+      URL.revokeObjectURL(url);
+    } catch {
+      setError(
+        "Unable to download the GZip file."
       );
-    };
+    }
+  };
 
   /*
-   * Automatically compress.
+   * Download Base64 representation.
+   */
+  const downloadBase64 = (
+    filename = "compressed-gzip.txt"
+  ) => {
+    if (!resultData) return;
+
+    const blob = new Blob(
+      [resultData],
+      {
+        type: "text/plain;charset=utf-8",
+      }
+    );
+
+    const url =
+      URL.createObjectURL(blob);
+
+    const element =
+      document.createElement("a");
+
+    element.href = url;
+    element.download = filename;
+
+    document.body.appendChild(
+      element
+    );
+
+    element.click();
+
+    document.body.removeChild(
+      element
+    );
+
+    URL.revokeObjectURL(url);
+  };
+
+  /*
+   * Copy status.
    */
   useEffect(() => {
-    if (!editorData.trim()) {
-      setCompressedData(
-        null
-      );
-      setError("");
+    if (
+      copyResButtonTitle ===
+      "Copy"
+    ) {
       return;
     }
 
-    const timer =
-      setTimeout(() => {
-        compressGzip(
-          editorData
+    const timer = setTimeout(
+      () => {
+        setCopyResButtonTitle(
+          "Copy"
         );
-      }, 500);
+      },
+      2000
+    );
 
     return () =>
       clearTimeout(timer);
+  }, [copyResButtonTitle]);
+
+  /*
+   * Automatically compress text.
+   */
+  useEffect(() => {
+    if (!editorData.trim()) {
+      setResultData("");
+      setError("");
+      setOriginalSize(0);
+      setCompressedSize(0);
+      setCompressionRatio(0);
+      return;
+    }
+
+    const timer = setTimeout(
+      () => {
+        gzipCompress(
+          editorData
+        );
+      },
+      500
+    );
+
+    return () =>
+      clearTimeout(timer);
+
+    // Intentionally only depends on editorData.
+    // gzipCompress is recreated on render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorData]);
 
   /*
    * Theme.
    */
-  const setTheme = (
-    isDark
-  ) => {
+  const setTheme = (isDark) => {
     if (monaco) {
       monaco.editor.setTheme(
         isDark
@@ -774,9 +768,7 @@ function App() {
       );
     }
 
-    setDarkTheme(
-      isDark
-    );
+    setDarkTheme(isDark);
 
     try {
       localStorage.setItem(
@@ -789,7 +781,7 @@ function App() {
   };
 
   /*
-   * Load theme.
+   * Load saved theme.
    */
   useEffect(() => {
     try {
@@ -807,7 +799,7 @@ function App() {
   /*
    * Monaco mount.
    */
-  const onMountEditor = (
+  const onMountResultEditor = (
     editorInstance,
     monacoInstance
   ) => {
@@ -869,7 +861,48 @@ function App() {
       item.input
     );
 
+    setResultData(
+      item.output
+    );
+
     setError("");
+
+    setOriginalSize(
+      new TextEncoder().encode(
+        item.input
+      ).byteLength
+    );
+
+    try {
+      const binaryString =
+        atob(item.output);
+
+      const compressedSize =
+        binaryString.length;
+
+      setCompressedSize(
+        compressedSize
+      );
+
+      const inputSize =
+        new TextEncoder().encode(
+          item.input
+        ).byteLength;
+
+      const ratio =
+        inputSize > 0
+          ? (
+              (1 -
+                compressedSize /
+                  inputSize) *
+              100
+            )
+          : 0;
+
+      setCompressionRatio(
+        Math.max(0, ratio)
+      );
+    } catch {}
 
     setIsHistoryOpen(
       false
@@ -882,26 +915,22 @@ function App() {
   const deleteHistory = (
     id
   ) => {
-    setHistory(
-      (previous) => {
-        const updated =
-          previous.filter(
-            (item) =>
-              item.id !== id
-          );
+    setHistory((previous) => {
+      const updated =
+        previous.filter(
+          (item) =>
+            item.id !== id
+        );
 
-        try {
-          localStorage.setItem(
-            "gzip-compressor-history",
-            JSON.stringify(
-              updated
-            )
-          );
-        } catch {}
+      try {
+        localStorage.setItem(
+          "gzip-compressor-history",
+          JSON.stringify(updated)
+        );
+      } catch {}
 
-        return updated;
-      }
-    );
+      return updated;
+    });
   };
 
   /*
@@ -910,28 +939,22 @@ function App() {
   const formatBytes = (
     bytes
   ) => {
-    if (bytes === 0) {
-      return "0 Bytes";
+    if (!bytes) return "0 B";
+
+    if (bytes < 1024) {
+      return `${bytes} B`;
     }
 
-    const units = [
-      "Bytes",
-      "KB",
-      "MB",
-      "GB",
-    ];
-
-    const index = Math.floor(
-      Math.log(bytes) /
-        Math.log(1024)
-    );
+    if (bytes < 1024 * 1024) {
+      return `${(
+        bytes / 1024
+      ).toFixed(2)} KB`;
+    }
 
     return `${(
       bytes /
-      Math.pow(1024, index)
-    ).toFixed(
-      index === 0 ? 0 : 2
-    )} ${units[index]}`;
+      (1024 * 1024)
+    ).toFixed(2)} MB`;
   };
 
   return (
@@ -948,7 +971,7 @@ function App() {
         <HeaderContainer>
           <div className="brand-nav">
             <h1 className="brand-title">
-              GZIP Compressor
+              GZip Compressor
             </h1>
           </div>
 
@@ -991,9 +1014,7 @@ function App() {
               </button>
 
               <Button
-                title={
-                  fontSize
-                }
+                title={fontSize}
               />
 
               <button
@@ -1028,13 +1049,11 @@ function App() {
             >
               <div
                 style={{
-                  color:
-                    darkTheme
-                      ? "grey"
-                      : "#FDB813",
+                  color: darkTheme
+                    ? "grey"
+                    : "#FDB813",
                   fontSize: "22px",
-                  cursor:
-                    "pointer",
+                  cursor: "pointer",
                 }}
                 onClick={() =>
                   setTheme(false)
@@ -1045,18 +1064,13 @@ function App() {
 
               <div
                 style={{
-                  margin:
-                    "0px 5px",
+                  margin: "0px 5px",
                   height: "24px",
                 }}
               >
                 <Switch
-                  checkedIcon={
-                    false
-                  }
-                  uncheckedIcon={
-                    false
-                  }
+                  checkedIcon={false}
+                  uncheckedIcon={false}
                   height={24}
                   onChange={
                     setTheme
@@ -1113,7 +1127,7 @@ function App() {
                 "0 0 10px #5eead4",
             }}
           >
-            {/* INPUT */}
+            {/* TEXT INPUT */}
 
             <div
               style={{
@@ -1149,205 +1163,94 @@ function App() {
                     enabled: false,
                   },
                   overviewRulerLanes: 0,
-                  wordWrap:
-                    "on",
+                  wordWrap: "on",
                   fontSize: `${fontSize}px`,
                   scrollbar: {
-                    handleMouseWheel:
-                      true,
-                    alwaysConsumeMouseWheel:
-                      true,
+                    handleMouseWheel: true,
+                    alwaysConsumeMouseWheel: true,
                   },
                   renderLineHighlight:
                     "none",
-                  isWholeLine:
-                    true,
+                  isWholeLine: true,
                 }}
               />
             </div>
 
-            {/* RESULT */}
+            {/* GZIP BASE64 OUTPUT */}
 
-            <ResultPanel
-              $dark={darkTheme}
+            <div
+              style={{
+                position:
+                  "relative",
+              }}
             >
-              <ResultInner>
-                <ResultTitle>
-                  GZIP Compression Result
-                </ResultTitle>
+              <Editor
+                height={`calc(100vh - ${
+                  headerContainerHeight +
+                  footerContainerHeight -
+                  20
+                }px)`}
+                width="100%"
+                theme={
+                  darkTheme
+                    ? "vs-dark"
+                    : "vs"
+                }
+                path="file:///gzip-compressor/result.txt"
+                value={
+                  resultData || ""
+                }
+                onMount={
+                  onMountResultEditor
+                }
+                language="plaintext"
+                options={{
+                  readOnly: false,
+                  minimap: {
+                    enabled: false,
+                  },
+                  overviewRulerLanes: 0,
+                  wordWrap: "on",
+                  fontSize: `${fontSize}px`,
+                  scrollbar: {
+                    handleMouseWheel: true,
+                    alwaysConsumeMouseWheel: true,
+                  },
+                  renderLineHighlight:
+                    "none",
+                  isWholeLine: true,
+                }}
+              />
 
-                {error && (
-                  <div
-                    style={{
-                      padding:
-                        "12px 14px",
-                      marginBottom:
-                        "18px",
-                      background:
-                        darkTheme
-                          ? "#451a1a"
-                          : "#fee2e2",
-                      color:
-                        darkTheme
-                          ? "#fecaca"
-                          : "#991b1b",
-                      border:
-                        "1px solid",
-                      borderColor:
-                        darkTheme
-                          ? "#7f1d1d"
-                          : "#fecaca",
-                      borderRadius:
-                        "8px",
-                      fontSize:
-                        "14px",
-                    }}
-                  >
-                    {error}
-                  </div>
-                )}
+              {/* ERROR */}
 
-                {compressedData &&
-                  !error && (
-                    <>
-                      <SuccessMessage
-                        $dark={
-                          darkTheme
-                        }
-                      >
-                        GZIP compression
-                        completed successfully.
-                        Your compressed file is
-                        ready to download.
-                      </SuccessMessage>
-
-                      <StatCard
-                        $dark={
-                          darkTheme
-                        }
-                      >
-                        <div className="label">
-                          Original Size
-                        </div>
-
-                        <div className="value">
-                          {formatBytes(
-                            compressedData.originalSize
-                          )}
-                        </div>
-                      </StatCard>
-
-                      <StatCard
-                        $dark={
-                          darkTheme
-                        }
-                      >
-                        <div className="label">
-                          Compressed Size
-                        </div>
-
-                        <div className="value">
-                          {formatBytes(
-                            compressedData.compressedSize
-                          )}
-                        </div>
-                      </StatCard>
-
-                      <StatCard
-                        $dark={
-                          darkTheme
-                        }
-                      >
-                        <div className="label">
-                          Space Saved
-                        </div>
-
-                        <div className="value">
-                          {formatBytes(
-                            Math.max(
-                              0,
-                              compressedData.savedBytes
-                            )
-                          )}
-                        </div>
-                      </StatCard>
-
-                      <StatCard
-                        $dark={
-                          darkTheme
-                        }
-                      >
-                        <div className="label">
-                          Compression
-                        </div>
-
-                        <div className="value">
-                          {compressedData.compressionRatio.toFixed(
-                            2
-                          )}
-                          %
-                        </div>
-                      </StatCard>
-
-                      <button
-                        type="button"
-                        onClick={
-                          downloadGzip
-                        }
-                        style={{
-                          width:
-                            "100%",
-                          display:
-                            "flex",
-                          alignItems:
-                            "center",
-                          justifyContent:
-                            "center",
-                          gap: "8px",
-                          padding:
-                            "12px 16px",
-                          border:
-                            "none",
-                          borderRadius:
-                            "8px",
-                          background:
-                            "#0f9d78",
-                          color:
-                            "#ffffff",
-                          fontSize:
-                            "15px",
-                          fontWeight:
-                            600,
-                          cursor:
-                            "pointer",
-                        }}
-                      >
-                        <IoMdDownload />
-                        Download GZIP
-                      </button>
-                    </>
-                  )}
-
-                {!compressedData &&
-                  !error && (
-                    <div
-                      style={{
-                        color:
-                          darkTheme
-                            ? "#a1a1aa"
-                            : "#64748b",
-                        lineHeight:
-                          1.7,
-                      }}
-                    >
-                      Enter text in the
-                      left editor to
-                      compress it using
-                      GZIP.
-                    </div>
-                  )}
-              </ResultInner>
-            </ResultPanel>
+              {error && (
+                <div
+                  style={{
+                    position:
+                      "absolute",
+                    left: "12px",
+                    right: "12px",
+                    bottom: "12px",
+                    padding:
+                      "10px 12px",
+                    background:
+                      "#fee2e2",
+                    color:
+                      "#991b1b",
+                    border:
+                      "1px solid #fecaca",
+                    borderRadius:
+                      "6px",
+                    fontSize:
+                      "13px",
+                    zIndex: 5,
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+            </div>
           </SplitPane>
         </TopContainer>
 
@@ -1372,8 +1275,7 @@ function App() {
                   "column",
                 backgroundColor:
                   "#f1f5f9",
-                width:
-                  "100%",
+                width: "100%",
               }}
             >
               <ToolBar>
@@ -1398,7 +1300,7 @@ function App() {
                 >
                   <input
                     type="file"
-                    accept=".txt,.json,.csv,.xml,.html,.css,.js"
+                    accept=".txt,.json,.html,.css,.js,.xml,.csv,.md,text/*"
                     onChange={
                       handleFileUpload
                     }
@@ -1449,50 +1351,128 @@ function App() {
                   History
                 </ToolBtn>
 
-                {/* DOWNLOAD */}
+                {/* DOWNLOAD GZIP */}
 
                 <ToolBtn
-                  onClick={
-                    downloadGzip
-                  }
-                  disabled={
-                    !compressedData
-                  }
-                >
-                  <IoMdDownload />
-                  Download
-                </ToolBtn>
-
-                {/* COMPRESS */}
-
-                <ToolBtn
-                  $primary
+                  // $primary
                   onClick={() =>
-                    compressGzip(
-                      editorData
+                    downloadGzip(
+                      "compressed.gz"
                     )
                   }
                   disabled={
-                    !editorData.trim()
+                    !resultData
                   }
                 >
-                  Compress
+                  <IoMdDownload />
+                  Download GZip
+                </ToolBtn>
+
+                {/* PASTE RESULT */}
+
+                <ToolBtn
+                  onClick={() => {
+                    if (
+                      resultData
+                    ) {
+                      setEditorData(
+                        resultData
+                      );
+                    }
+                  }}
+                  disabled={
+                    !resultData
+                  }
+                >
+                  <IoMdDownload
+                    style={{
+                      transform:
+                        "rotate(180deg)",
+                    }}
+                  />
+                  Use Base64
                 </ToolBtn>
 
                 <ToolRight>
+                  {/* STATS */}
+
+                  {resultData && (
+                    <StatsBox>
+                      <span>
+                        Original:{" "}
+                        <strong>
+                          {formatBytes(
+                            originalSize
+                          )}
+                        </strong>
+                      </span>
+
+                      <span>
+                        GZip:{" "}
+                        <strong>
+                          {formatBytes(
+                            compressedSize
+                          )}
+                        </strong>
+                      </span>
+
+                      <span>
+                        Saved:{" "}
+                        <strong>
+                          {compressionRatio.toFixed(
+                            1
+                          )}
+                          %
+                        </strong>
+                      </span>
+                    </StatsBox>
+                  )}
+
+                  {/* DOWNLOAD BASE64 */}
+
                   <ToolBtn
-                    onClick={
-                      downloadGzip
+                    onClick={() =>
+                      downloadBase64(
+                        "compressed-gzip.txt"
+                      )
                     }
                     disabled={
-                      !compressedData
+                      !resultData
                     }
                   >
                     <IoMdDownload />
-                    Download GZIP
+                    Base64
                   </ToolBtn>
 
+                  {/* COPY */}
+
+                  <CopyToClipboard
+                    text={
+                      resultData ||
+                      ""
+                    }
+                    onCopy={() =>
+                      setCopyResButtonTitle(
+                        "Copied"
+                      )
+                    }
+                  >
+                    <ToolBtn
+                      disabled={
+                        !resultData
+                      }
+                    >
+                      <IoCopyOutline />
+
+                      {
+                        copyResButtonTitle
+                      }
+                    </ToolBtn>
+                  </CopyToClipboard>
+
                   <ToolDivider />
+
+                  {/* SEARCH */}
 
                   <ToolBtn
                     onClick={
@@ -1529,12 +1509,8 @@ function App() {
                 }) => (
                   <Link
                     className="menu-item"
-                    href={
-                      href
-                    }
-                    key={
-                      href
-                    }
+                    href={href}
+                    key={href}
                   >
                     {label}
                   </Link>
@@ -1566,7 +1542,7 @@ function App() {
             >
               <HistoryModalHeader>
                 <h2>
-                  GZIP Compression History
+                  GZip Compressor History
                 </h2>
 
                 <button
@@ -1606,6 +1582,9 @@ function App() {
                     >
                       <div
                         className="card-content"
+                        title={
+                          item.input
+                        }
                         onClick={() =>
                           restoreHistory(
                             item
@@ -1619,25 +1598,19 @@ function App() {
                         </span>
 
                         <span className="preview">
-                          Original:{" "}
-                          {formatBytes(
-                            item.originalSize
+                          Input:{" "}
+                          {item.input.substring(
+                            0,
+                            150
                           )}
                         </span>
 
                         <span className="preview">
-                          Compressed:{" "}
-                          {formatBytes(
-                            item.compressedSize
+                          GZip Base64:{" "}
+                          {item.output.substring(
+                            0,
+                            300
                           )}
-                        </span>
-
-                        <span className="preview">
-                          Saved:{" "}
-                          {item.compressionRatio.toFixed(
-                            2
-                          )}
-                          %
                         </span>
                       </div>
 
@@ -1665,22 +1638,23 @@ function App() {
         <HomeSeoSection>
           <div className="content">
             <h2>
-              Free Online GZIP Compressor
+              Free Online GZip Compressor
             </h2>
 
             <p>
-              GZIP Compressor is a free online
-              tool that compresses text, JSON,
-              CSV, XML, HTML, JavaScript, CSS,
-              and other text-based data into a
-              GZIP file.
+              GZip Compressor is a free online
+              tool that compresses text and files
+              using the GZip compression format.
+              Compress your data instantly
+              directly in your browser.
             </p>
 
             <p>
-              Paste your data into the editor or
-              upload a file to compress it directly
-              in your browser and download the
-              resulting .gz file.
+              Paste text into the input editor
+              or upload a text-based file to
+              create compressed GZip data.
+              Download the resulting GZip file
+              or copy its Base64 representation.
             </p>
 
             <div className="link-row">
@@ -1700,47 +1674,48 @@ function App() {
             </div>
 
             <h3>
-              Why use this GZIP Compressor?
+              Why use this GZip Compressor?
             </h3>
 
             <ul>
               <li>
-                Compress text and files instantly
-                in your browser.
+                Compress text instantly in
+                your browser.
               </li>
 
               <li>
-                Compress JSON, CSV, XML, HTML,
-                CSS, and JavaScript.
+                Create standard GZip compressed
+                data.
               </li>
 
               <li>
-                Download compressed data as a
-                GZIP file.
+                Upload text-based files directly
+                from your computer.
               </li>
 
               <li>
-                View original and compressed file
-                sizes.
+                Download the compressed file
+                as a .gz file.
               </li>
 
               <li>
-                Calculate the percentage of space
-                saved.
+                View the Base64 representation
+                of compressed GZip data.
               </li>
 
               <li>
-                Upload files directly from your
-                computer.
+                Compare original and compressed
+                file sizes.
               </li>
 
               <li>
-                Keep your data processing in the
-                browser.
+                See the percentage of data
+                saved through compression.
               </li>
 
               <li>
-                No server-side upload is required.
+                Process your data directly in
+                your browser.
               </li>
             </ul>
 
@@ -1749,58 +1724,74 @@ function App() {
             </h3>
 
             <h4>
-              What is GZIP compression?
+              What is GZip compression?
             </h4>
 
             <p>
-              GZIP is a lossless compression format
-              commonly used to reduce the size of
-              files and data transferred over the
-              internet. The original data can be
-              recovered after decompression.
+              GZip is a lossless compression
+              format commonly used to reduce
+              the size of text and other data.
+              The original content can be
+              recovered by decompressing the
+              GZip file.
             </p>
 
             <h4>
-              How do I compress a file with GZIP?
+              How do I compress a file with GZip?
             </h4>
 
             <p>
               Upload a supported text-based file
-              or paste your data into the editor.
-              The GZIP Compressor creates a
-              compressed GZIP file that you can
-              download.
+              or paste your content into the input
+              editor. The GZip Compressor
+              automatically compresses the content
+              and displays the resulting compressed
+              data.
             </p>
 
             <h4>
-              Can I compress JSON with GZIP?
+              Can I download the compressed GZip file?
             </h4>
 
             <p>
-              Yes. JSON is text-based data and can
-              be compressed using GZIP. GZIP can
-              significantly reduce the size of
-              repetitive text data.
+              Yes. After compression, click
+              Download GZip to download the actual
+              compressed file with a .gz extension.
             </p>
 
             <h4>
-              Does GZIP compression reduce data quality?
+              What is GZip Base64?
             </h4>
 
             <p>
-              No. GZIP uses lossless compression.
-              Decompressing a GZIP file restores
-              the original data.
+              GZip Base64 is a text representation
+              of the binary GZip data. It is useful
+              when compressed binary data needs to
+              be copied or transferred as text.
             </p>
 
             <h4>
-              Is this GZIP Compressor free?
+              Does this GZip Compressor work online?
             </h4>
 
             <p>
-              Yes. This GZIP Compressor is free
-              to use online and performs compression
-              directly in your browser.
+              Yes. The compression is performed
+              directly in your browser using the
+              browser's native GZip compression
+              capabilities. Your input does not
+              need to be uploaded to a server for
+              compression.
+            </p>
+
+            <h4>
+              Is this GZip Compressor free?
+            </h4>
+
+            <p>
+              Yes. The GZip Compressor is free to
+              use and lets you compress text and
+              supported files directly in your
+              browser.
             </p>
           </div>
         </HomeSeoSection>
