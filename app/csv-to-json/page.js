@@ -1,225 +1,39 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { css, styled } from "styled-components";
+import { useEffect, useState } from "react";
+import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
-import Button from "../../Components/Buttons/Button";
-import {
-  TrimValueState,
-  getContainerMode,
-  getMode,
-  getTimeDiff,
-  saveContainerMode,
-  saveHistory,
-  setMode,
-} from "../../utils";
-import { useParams } from "next/navigation";
-
 import Switch from "react-switch";
 import CopyToClipboard from "react-copy-to-clipboard";
 import { IoMdClose, IoMdMoon, IoMdDownload } from "react-icons/io";
-import SavedTabData from "../../Components/CustomStates/SavedTabData";
-import { HOME_JSON_LD } from "../seo";
-import Link from "next/link";
-import { MdOutlineContentPaste } from "react-icons/md";
+import {
+  MdHistory,
+  MdOutlineContentPaste,
+} from "react-icons/md";
 import { AiOutlineDelete } from "react-icons/ai";
 import { IoSearch, IoCopyOutline } from "react-icons/io5";
-import Menu from "../../Components/Menu";
-import { useBookmarkStatus } from "@/Components/CustomStates/CheckBookmark";
 import { LuMoveHorizontal } from "react-icons/lu";
-
-const CSV_TO_JSON_SCHEMA = {
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "CSV to JSON Converter",
-  applicationCategory: "DeveloperApplication",
-  operatingSystem: "Any",
-  browserRequirements: "Requires modern web browser",
-  description:
-    "Free online CSV to JSON converter that transforms CSV data into formatted JSON instantly.",
-  url: "https://www.json-beautifier.net/csv-to-json",
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
-  },
-  featureList: [
-    "Convert CSV to JSON",
-    "Parse CSV headers automatically",
-    "Support quoted CSV values",
-    "Copy and download JSON output",
-    "Works in any modern browser",
-  ],
-};
+import Link from "next/link";
+import Menu from "@/Components/Menu";
+import Button from "@/Components/Buttons/Button";
 
 const headerContainerHeight = 70;
-const footerContainerHeight = 110;
+const footerContainerHeight = 80;
 
 const HOME_NAV_LINKS = [
   { href: "/", label: "Home" },
-//   { href: "/json-to-xml", label: "JSON to XML" },
-//   { href: "/xml-to-json", label: "XML to JSON" },
-//   { href: "/json-to-csv", label: "JSON to CSV" },
-//   { href: "/csv-to-json", label: "CSV to JSON" },
+  { href: "/blog", label: "Blog" },
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact" },
   { href: "/privacy-policy", label: "Privacy Policy" },
 ];
 
-const useBrowserLayoutEffect =
-  typeof window === "undefined" ? useEffect : useLayoutEffect;
-
-/* ---------- CSV -> JSON helpers ---------- */
-
-const parseCsv = (csvText) => {
-  const rows = [];
-  let currentRow = [];
-  let currentValue = "";
-  let insideQuotes = false;
-
-  for (let i = 0; i < csvText.length; i++) {
-    const char = csvText[i];
-    const nextChar = csvText[i + 1];
-
-    if (char === '"') {
-      if (insideQuotes && nextChar === '"') {
-        currentValue += '"';
-        i++;
-      } else {
-        insideQuotes = !insideQuotes;
-      }
-    } else if (char === "," && !insideQuotes) {
-      currentRow.push(currentValue);
-      currentValue = "";
-    } else if (
-      (char === "\n" || char === "\r") &&
-      !insideQuotes
-    ) {
-      if (char === "\r" && nextChar === "\n") {
-        i++;
-      }
-
-      currentRow.push(currentValue);
-
-      if (
-        currentRow.some((value) => value.trim() !== "")
-      ) {
-        rows.push(currentRow);
-      }
-
-      currentRow = [];
-      currentValue = "";
-    } else {
-      currentValue += char;
-    }
-  }
-
-  if (
-    currentValue.length > 0 ||
-    currentRow.length > 0
-  ) {
-    currentRow.push(currentValue);
-
-    if (
-      currentRow.some((value) => value.trim() !== "")
-    ) {
-      rows.push(currentRow);
-    }
-  }
-
-  if (insideQuotes) {
-    throw new Error("Invalid CSV: unclosed quote");
-  }
-
-  return rows;
-};
-
-const convertValue = (value) => {
-  const trimmedValue = value.trim();
-
-  if (trimmedValue === "") {
-    return "";
-  }
-
-  if (trimmedValue === "true") {
-    return true;
-  }
-
-  if (trimmedValue === "false") {
-    return false;
-  }
-
-  if (trimmedValue === "null") {
-    return null;
-  }
-
-  if (
-    trimmedValue !== "" &&
-    !Number.isNaN(Number(trimmedValue))
-  ) {
-    return Number(trimmedValue);
-  }
-
-  return value;
-};
-
-const formatJsonData = (data) => {
-  const rows = parseCsv(data);
-
-  if (!rows.length) {
-    return "";
-  }
-
-  const headers = rows[0].map((header) =>
-    header.trim(),
-  );
-
-  if (!headers.length) {
-    return "";
-  }
-
-  const result = rows.slice(1).map((row) => {
-    const object = {};
-
-    headers.forEach((header, index) => {
-      if (header) {
-        object[header] = convertValue(
-          row[index] ?? "",
-        );
-      }
-    });
-
-    return object;
-  });
-
-  return JSON.stringify(result, null, 2);
-};
-
-const trimEditorData = (data, trimValue) => {
-  const trimmedData = data?.trim() || "";
-
-  if (
-    trimValue &&
-    trimmedData.substring(
-      trimmedData.length - trimValue.length,
-      trimmedData.length,
-    ) === trimValue
-  ) {
-    return trimmedData.substring(
-      0,
-      trimmedData.length - trimValue.length,
-    );
-  }
-
-  return trimmedData;
-};
-
 const HeaderContainer = styled.div`
   width: 100%;
   height: 50px;
   padding: 0px 15px;
-  display: ${(p) => (p.$show || true ? "flex" : "none")};
+  display: flex;
   justify-content: space-between;
   gap: 20px;
   align-items: center;
@@ -243,24 +57,12 @@ const HeaderContainer = styled.div`
     white-space: nowrap;
   }
 
-  .bookmark-message {
-    flex: 1;
-    min-width: 180px;
-    text-align: center;
-    font-size: 15px;
-    font-weight: 500;
-  }
-
   @media (max-width: 760px) {
     gap: 10px;
     padding: 0px 10px;
 
     .brand-title {
       font-size: 20px;
-    }
-
-    .bookmark-message {
-      display: none;
     }
   }
 
@@ -328,46 +130,37 @@ const HomeSeoSection = styled.section`
     color: #ffffff;
     text-decoration: none;
     font-weight: 600;
+    transition: opacity 0.2s ease;
   }
 
   .link-row a:hover {
     opacity: 0.9;
   }
+
+  a {
+    color: #0f4c81;
+  }
 `;
 
 const TopContainer = styled.div`
   width: 100%;
-
-  ${(p) =>
-    p.mode === "H"
-      ? css`
-          height: calc(
-            100vh - ${headerContainerHeight +
-            footerContainerHeight -
-            20}px
-          );
-        `
-      : css`
-          height: calc(
-            100vh - ${footerContainerHeight +
-            headerContainerHeight -
-            20}px
-          );
-        `}
+  height: calc(
+    100vh - ${headerContainerHeight + footerContainerHeight - 20}px
+  );
 `;
 
 const BottomContainer = styled.div`
   width: 100%;
   height: ${footerContainerHeight}px;
-  display: ${(p) => (p.$show || true ? "flex" : "none")};
+  display: flex;
   flex-direction: column;
-  background-color: #0f2630;
+  background-color: #f1f5f9;
   z-index: 100;
 
   .menu-container {
     position: relative;
     height: 14px;
-    color: white;
+    color: #12343b;
   }
 
   .menu-item {
@@ -376,139 +169,716 @@ const BottomContainer = styled.div`
     height: 15px;
     padding: 0px 4px;
     cursor: pointer;
-    color: white;
+    color: #12343b;
     text-decoration: none;
 
     &:hover {
       text-decoration: underline;
     }
   }
+`;
 
-  .saved-tab {
-    border: 1px solid grey;
-    border-radius: 4px;
-    margin: 0px 5px;
-    color: lightgray;
-    display: flex;
-    justify-content: space-between;
-    gap: 5px;
-    align-items: center;
-    padding: 2px 7px;
-    font-size: 12px;
-    white-space: nowrap;
+const ToolBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  flex-wrap: wrap;
+`;
 
-    &:hover {
-      border-color: #963d32;
-      background-color: #8b4238;
-    }
+const ToolBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid ${(p) =>
+    p.$primary ? "#0f9d78" : "#e2e8f0"};
+  background: ${(p) =>
+    p.$primary ? "#0f9d78" : "#ffffff"};
+  color: ${(p) =>
+    p.$primary ? "#ffffff" : "#334155"};
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: ${(p) =>
+      p.$primary ? "#0c8a67" : "#f1f5f9"};
+    border-color: ${(p) =>
+      p.$primary ? "#0c8a67" : "#cbd5e1"};
   }
 
-  .history-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #963d32 #1b1b1b;
-
-    &::-webkit-scrollbar {
-      height: 8px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: #1b1b1b;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      border-radius: 4px;
-      background: #963d32;
-    }
-
-    &::-webkit-scrollbar-thumb:hover {
-      background: #b84d40;
-    }
+  &:active {
+    transform: scale(0.97);
   }
 
-  .icon {
-    display: flex;
-    align-items: center;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  svg {
+    font-size: 16px;
+  }
+`;
+
+const ToolDivider = styled.div`
+  width: 1px;
+  height: 22px;
+  background: #e2e8f0;
+  margin: 0 4px;
+`;
+
+const ToolRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+
+  @media (max-width: 700px) {
+    margin-left: 0;
+  }
+`;
+
+const HistoryOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 38, 48, 0.6);
+`;
+
+const HistoryModal = styled.div`
+  width: min(760px, 100%);
+  max-height: min(620px, 90vh);
+  overflow: hidden;
+  border: 1px solid #adddd7;
+  border-radius: 12px;
+  background: #f8fbfb;
+  box-shadow: 0 14px 40px rgba(15, 38, 48, 0.3);
+`;
+
+const HistoryModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #dbe5e9;
+  color: #12343b;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  button {
+    border: 0;
+    background: transparent;
+    color: #12343b;
+    font-size: 24px;
     cursor: pointer;
-    border: 1px solid grey;
+  }
+`;
 
-    &:hover {
-      color: red;
-    }
+const HistoryCards = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 20px;
+`;
+
+const HistoryCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 260px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dbe5e9;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(36, 55, 70, 0.08);
+
+  .card-content {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    padding: 14px;
+    cursor: pointer;
+  }
+
+  .timestamp {
+    display: block;
+    overflow: hidden;
+    color: #12343b;
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .preview {
+    display: block;
+    overflow: hidden;
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.45;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 6;
+  }
+
+  .card-delete {
+    flex-shrink: 0;
+    width: 100%;
+    padding: 8px 12px;
+    border: 0;
+    border-top: 1px solid #dbe5e9;
+    background: #f8fbfb;
+    color: #963d32;
+    cursor: pointer;
   }
 `;
 
 function App() {
-  const { sId } = useParams();
-const [isBookmarked, bookmark] = useBookmarkStatus();
-  const { tabData, save, getTabData, deleteTab } =
-    SavedTabData();
-
   const [editorData, setEditorData] = useState("");
   const [resultData, setResultData] = useState("");
-
-  const [timestampHovered, setTimestampHovered] =
-    useState();
-
-  const tempEditorData = useMemo(() => {
-    if (timestampHovered) {
-      return getTabData(timestampHovered);
-    }
-
-    return "";
-  }, [timestampHovered, getTabData]);
-
-  const [editor, setEditor] = useState();
-  const [monaco, setMonaco] = useState();
-
-  const [trimValue] = TrimValueState();
-
-  const [containerViewMode, setContainerViewMode] =
-    useState("B");
-
-  const [isContainerViewModeReady, setIsContainerViewModeReady] =
-    useState(false);
-
+  const [error, setError] = useState("");
   const [darkTheme, setDarkTheme] = useState(false);
-  const [isPasting, setIsPasting] = useState(false);
-  const [newData, setNewData] = useState("");
+  const [fontSize, setFontSize] = useState(14);
+
+  const [history, setHistory] = useState([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  const [editor, setEditor] = useState(null);
+  const [monaco, setMonaco] = useState(null);
 
   const [copyResButtonTitle, setCopyResButtonTitle] =
     useState("Copy");
 
-  const [fontSize, setFontSize] = useState(14);
+  /*
+   * Parse a single CSV row while respecting
+   * quoted values and escaped quotes.
+   */
+  const parseCsvRow = (line) => {
+    const values = [];
+    let current = "";
+    let insideQuotes = false;
 
-  useBrowserLayoutEffect(() => {
-    if (!sId) {
-      setEditorData("");
-      setResultData("");
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        if (
+          insideQuotes &&
+          line[i + 1] === '"'
+        ) {
+          current += '"';
+          i++;
+        } else {
+          insideQuotes = !insideQuotes;
+        }
+      } else if (
+        char === "," &&
+        !insideQuotes
+      ) {
+        values.push(current);
+        current = "";
+      } else {
+        current += char;
+      }
     }
 
-    const savedContainerMode =
-      getContainerMode();
+    values.push(current);
 
-    setContainerViewMode(
-      savedContainerMode === "B" ? "B" : "H",
-    );
+    return values;
+  };
 
-    setDarkTheme(getMode());
-    setIsContainerViewModeReady(true);
-  }, [sId, trimValue]);
+  /*
+   * Parse CSV text including quoted fields.
+   */
+  const parseCsv = (csv) => {
+    const rows = [];
+    let currentRow = [];
+    let currentValue = "";
+    let insideQuotes = false;
 
-  const onMountResultEditor = (
-    editorInstance,
-    monacoInstance,
-  ) => {
-    editorInstance.onKeyDown((event) => {
-      const { keyCode, ctrlKey, metaKey } = event;
+    for (let i = 0; i < csv.length; i++) {
+      const char = csv[i];
+
+      if (char === '"') {
+        if (
+          insideQuotes &&
+          csv[i + 1] === '"'
+        ) {
+          currentValue += '"';
+          i++;
+        } else {
+          insideQuotes = !insideQuotes;
+        }
+      } else if (
+        char === "," &&
+        !insideQuotes
+      ) {
+        currentRow.push(currentValue);
+        currentValue = "";
+      } else if (
+        (char === "\n" ||
+          char === "\r") &&
+        !insideQuotes
+      ) {
+        if (
+          char === "\r" &&
+          csv[i + 1] === "\n"
+        ) {
+          i++;
+        }
+
+        currentRow.push(currentValue);
+
+        if (
+          currentRow.some(
+            (value) =>
+              value.trim() !== ""
+          )
+        ) {
+          rows.push(currentRow);
+        }
+
+        currentRow = [];
+        currentValue = "";
+      } else {
+        currentValue += char;
+      }
+    }
+
+    if (
+      currentValue !== "" ||
+      currentRow.length > 0
+    ) {
+      currentRow.push(currentValue);
 
       if (
-        keyCode === 52 &&
-        (metaKey || ctrlKey)
+        currentRow.some(
+          (value) =>
+            value.trim() !== ""
+        )
       ) {
-        event.preventDefault();
+        rows.push(currentRow);
       }
-    });
+    }
 
+    return rows;
+  };
+
+  /*
+   * Convert a string value to a useful JSON type.
+   */
+  const convertValue = (value) => {
+    const trimmed = value.trim();
+
+    if (trimmed === "") {
+      return "";
+    }
+
+    if (
+      trimmed === "true"
+    ) {
+      return true;
+    }
+
+    if (
+      trimmed === "false"
+    ) {
+      return false;
+    }
+
+    if (
+      trimmed === "null"
+    ) {
+      return null;
+    }
+
+    if (
+      /^-?\d+(\.\d+)?$/.test(
+        trimmed
+      )
+    ) {
+      return Number(trimmed);
+    }
+
+    return value;
+  };
+
+  /*
+   * Convert CSV to JSON.
+   */
+  const convertCsvToJson = (
+    csvString
+  ) => {
+    if (
+      !csvString ||
+      !csvString.trim()
+    ) {
+      setResultData("");
+      setError("");
+      return;
+    }
+
+    try {
+      setError("");
+
+      const rows =
+        parseCsv(csvString);
+
+      if (rows.length < 2) {
+        throw new Error(
+          "CSV must contain a header row and at least one data row."
+        );
+      }
+
+      const headers =
+        rows[0].map(
+          (header) =>
+            header.trim()
+        );
+
+      if (
+        headers.length === 0 ||
+        headers.every(
+          (header) =>
+            header === ""
+        )
+      ) {
+        throw new Error(
+          "CSV header row is empty."
+        );
+      }
+
+      /*
+       * Prevent duplicate column names
+       * from silently overwriting data.
+       */
+      const duplicateHeaders =
+        headers.filter(
+          (header, index) =>
+            headers.indexOf(
+              header
+            ) !== index
+        );
+
+      if (
+        duplicateHeaders.length >
+        0
+      ) {
+        throw new Error(
+          `Duplicate CSV column name: "${duplicateHeaders[0]}".`
+        );
+      }
+
+      const jsonArray =
+        rows
+          .slice(1)
+          .map((row) => {
+            const object = {};
+
+            headers.forEach(
+              (
+                header,
+                index
+              ) => {
+                object[header] =
+                  convertValue(
+                    row[index] ??
+                      ""
+                  );
+              }
+            );
+
+            return object;
+          });
+
+      const json = JSON.stringify(
+        jsonArray,
+        null,
+        2
+      );
+
+      setResultData(json);
+
+      saveToHistory(
+        csvString,
+        json
+      );
+    } catch (err) {
+      setResultData("");
+
+      setError(
+        err?.message ||
+          "Unable to convert CSV to JSON."
+      );
+    }
+  };
+
+  /*
+   * Save history locally.
+   */
+  const saveToHistory = (
+    input,
+    output
+  ) => {
+    if (!input || !output) return;
+
+    const item = {
+      id: Date.now(),
+      input,
+      output,
+      time: new Date().toLocaleString(),
+    };
+
+    setHistory((previous) => {
+      const updated = [
+        item,
+        ...previous,
+      ].slice(0, 20);
+
+      try {
+        localStorage.setItem(
+          "csv-to-json-history",
+          JSON.stringify(updated)
+        );
+      } catch {}
+
+      return updated;
+    });
+  };
+
+  /*
+   * Load history.
+   */
+  useEffect(() => {
+    try {
+      const saved =
+        localStorage.getItem(
+          "csv-to-json-history"
+        );
+
+      if (saved) {
+        setHistory(
+          JSON.parse(saved)
+        );
+      }
+    } catch {}
+  }, []);
+
+  /*
+   * Paste CSV.
+   */
+  const onClickPaste = async () => {
+    try {
+      const text =
+        await navigator.clipboard.readText();
+
+      if (text) {
+        setEditorData(text);
+        convertCsvToJson(text);
+      }
+    } catch {
+      setError(
+        "Unable to read clipboard."
+      );
+    }
+  };
+
+  /*
+   * Upload CSV file.
+   */
+  const handleFileUpload = async (
+    event
+  ) => {
+    const file =
+      event.target.files?.[0];
+
+    if (!file) return;
+
+    try {
+      setError("");
+
+      const text =
+        await file.text();
+
+      if (!text.trim()) {
+        throw new Error(
+          "The selected CSV file is empty."
+        );
+      }
+
+      setEditorData(text);
+      convertCsvToJson(text);
+    } catch (err) {
+      setResultData("");
+
+      setError(
+        err?.message ||
+          "Unable to read the selected CSV file."
+      );
+    }
+
+    event.target.value = "";
+  };
+
+  /*
+   * Clear input/output.
+   */
+  const clear = () => {
+    setEditorData("");
+    setResultData("");
+    setError("");
+  };
+
+  /*
+   * Download JSON.
+   */
+  const download = (
+    filename,
+    text
+  ) => {
+    if (!text) return;
+
+    const blob = new Blob(
+      [text],
+      {
+        type: "application/json;charset=utf-8;",
+      }
+    );
+
+    const url =
+      URL.createObjectURL(blob);
+
+    const element =
+      document.createElement("a");
+
+    element.href = url;
+    element.download =
+      filename;
+
+    document.body.appendChild(
+      element
+    );
+
+    element.click();
+
+    document.body.removeChild(
+      element
+    );
+
+    URL.revokeObjectURL(url);
+  };
+
+  /*
+   * Copy button status.
+   */
+  useEffect(() => {
+    if (
+      copyResButtonTitle ===
+      "Copy"
+    ) {
+      return;
+    }
+
+    const timer = setTimeout(
+      () => {
+        setCopyResButtonTitle(
+          "Copy"
+        );
+      },
+      2000
+    );
+
+    return () =>
+      clearTimeout(timer);
+  }, [copyResButtonTitle]);
+
+  /*
+   * Automatically convert CSV.
+   */
+  useEffect(() => {
+    if (!editorData.trim()) {
+      setResultData("");
+      setError("");
+      return;
+    }
+
+    const timer = setTimeout(
+      () => {
+        convertCsvToJson(
+          editorData
+        );
+      },
+      500
+    );
+
+    return () =>
+      clearTimeout(timer);
+  }, [editorData]);
+
+  /*
+   * Theme.
+   */
+  const setTheme = (isDark) => {
+    if (monaco) {
+      monaco.editor.setTheme(
+        isDark
+          ? "myThemeDark"
+          : "myThemeLight"
+      );
+    }
+
+    setDarkTheme(isDark);
+
+    try {
+      localStorage.setItem(
+        "csv-json-theme",
+        isDark
+          ? "dark"
+          : "light"
+      );
+    } catch {}
+  };
+
+  /*
+   * Load theme.
+   */
+  useEffect(() => {
+    try {
+      const theme =
+        localStorage.getItem(
+          "csv-json-theme"
+        );
+
+      if (theme === "dark") {
+        setDarkTheme(true);
+      }
+    } catch {}
+  }, []);
+
+  /*
+   * Monaco mount.
+   */
+  const onMountResultEditor = (
+    editorInstance,
+    monacoInstance
+  ) => {
     monacoInstance.editor.defineTheme(
       "myThemeDark",
       {
@@ -516,7 +886,7 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
         inherit: true,
         rules: [],
         colors: {},
-      },
+      }
     );
 
     monacoInstance.editor.defineTheme(
@@ -526,218 +896,95 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
         inherit: true,
         rules: [],
         colors: {},
-      },
+      }
     );
 
     monacoInstance.editor.setTheme(
-      getMode()
+      darkTheme
         ? "myThemeDark"
-        : "myThemeLight",
+        : "myThemeLight"
     );
 
-    setEditor(editorInstance);
-    setMonaco(monacoInstance);
+    setEditor(
+      editorInstance
+    );
+
+    setMonaco(
+      monacoInstance
+    );
   };
 
-  useEffect(() => {
-    if (!editor) {
-      return;
-    }
-
-    if (
-      editor.getValue() !==
-      (resultData || "")
-    ) {
-      editor.setValue(resultData || "");
-    }
-
-    editor.layout();
-  }, [editor, resultData]);
-
-  const setTheme = (isDark) => {
-    if (monaco) {
-      monaco.editor.setTheme(
-        isDark
-          ? "myThemeDark"
-          : "myThemeLight",
-      );
-    }
-
-    setDarkTheme(isDark);
-    setMode(isDark);
-  };
-
-  const convertOnChange = (data) => {
-    try {
-      setResultData(formatJsonData(data));
-    } catch {
-      setResultData("");
-    }
-  };
-
-  const trim = () =>
-    trimEditorData(editorData, trimValue);
-
-  useEffect(() => {
-    if (
-      isContainerViewModeReady &&
-      !sId
-    ) {
-      saveHistory(editorData);
-    }
-  }, [
-    editorData,
-    isContainerViewModeReady,
-    sId,
-  ]);
-
-  useEffect(() => {
-    if (!isContainerViewModeReady) {
-      return;
-    }
-
-    const handler = setTimeout(() => {
-      convertOnChange(trim());
-
-      if (editorData && isPasting) {
-        setNewData(editorData);
-        setIsPasting(false);
-      }
-    }, 500);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [
-    editorData,
-    isContainerViewModeReady,
-  ]);
-
-  useEffect(() => {
-    if (!newData) {
-      return;
-    }
-
-    const handler = setTimeout(() => {
-      const tabArr = Object.keys(tabData);
-
-      if (tabArr.length) {
-        if (
-          getTabData(tabArr[0]) !==
-          newData
-        ) {
-          save(newData);
-        }
-      } else {
-        save(newData);
-      }
-    }, 2000);
-
-    return () => clearTimeout(handler);
-  }, [
-    newData,
-    tabData,
-    getTabData,
-    save,
-  ]);
-
-  const onClickPaste = async () => {
-    try {
-      const text =
-        await navigator.clipboard.readText();
-
-      if (text) {
-        setEditorData(text);
-        setNewData(text);
-      }
-    } catch {
-      // Clipboard access failed
-    }
-  };
-
-  const clear = () => {
-    setEditorData("");
-    setResultData("");
-  };
-
+  /*
+   * Search.
+   */
   const findWord = () => {
     if (editor) {
       editor
-        .getAction("actions.find")
-        .run();
+        .getAction(
+          "actions.find"
+        )
+        ?.run();
     }
   };
 
-  function download(filename, text) {
-    const element =
-      document.createElement("a");
-
-    element.setAttribute(
-      "href",
-      "data:application/json;charset=utf-8," +
-        encodeURIComponent(text),
+  /*
+   * Restore history.
+   */
+  const restoreHistory = (
+    item
+  ) => {
+    setEditorData(
+      item.input
     );
 
-    element.setAttribute(
-      "download",
-      filename,
+    setResultData(
+      item.output
     );
 
-    element.style.display = "none";
+    setError("");
+    setIsHistoryOpen(
+      false
+    );
+  };
 
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  }
+  /*
+   * Delete history.
+   */
+  const deleteHistory = (
+    id
+  ) => {
+    setHistory((previous) => {
+      const updated =
+        previous.filter(
+          (item) =>
+            item.id !== id
+        );
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      if (
-        copyResButtonTitle !== "Copy"
-      ) {
-        setCopyResButtonTitle("Copy");
-      }
-    }, 3000);
+      try {
+        localStorage.setItem(
+          "csv-to-json-history",
+          JSON.stringify(
+            updated
+          )
+        );
+      } catch {}
 
-    return () => clearTimeout(handler);
-  }, [copyResButtonTitle]);
+      return updated;
+    });
+  };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            HOME_JSON_LD,
-          ),
-        }}
-      />
-
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            CSV_TO_JSON_SCHEMA,
-          ),
-        }}
-      />
-
       <main
         style={{
           minHeight: "100vh",
           width: "100%",
           overflowX: "hidden",
-          visibility:
-            isContainerViewModeReady
-              ? "visible"
-              : "hidden",
         }}
       >
-        <HeaderContainer
-          $show={
-            containerViewMode === "H"
-          }
-        >
+        {/* HEADER */}
+
+        <HeaderContainer>
           <div className="brand-nav">
             <h1 className="brand-title">
               CSV to JSON Converter
@@ -745,35 +992,14 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
           </div>
 
           <div
-              style={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "flex-end",
-              }}
-            >
-              {!isBookmarked && (
-                <button
-                  style={{ padding: "2px 8px" }}
-                  onClick={() => {
-                    const isMac = navigator.platform
-                      .toUpperCase()
-                      .includes("MAC");
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            {/* FONT SIZE */}
 
-                    alert(
-                      `To bookmark this page, press ${
-                        isMac ? "⌘ + D" : "Ctrl + D"
-                      }`,
-                    );
-
-                    bookmark();
-                  }}
-                >
-                  ⭐ To visit again, Bookmark this tool
-                </button>
-              )}
-            </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <div
               style={{
                 display: "flex",
@@ -782,10 +1008,53 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                 color: "#12343b",
               }}
             >
-              <button type="button" title="Decrease font size" style={{ width: "28px", height: "24px", padding: 0, fontSize: "16px" }} onClick={() => setFontSize(fontSize > 5 ? fontSize - 1 : 5)}>-</button>
-              <Button title={fontSize} />
-              <button type="button" title="Increase font size" style={{ width: "28px", height: "24px", padding: 0, fontSize: "16px" }} onClick={() => setFontSize(fontSize + 1)}>+</button>
+              <button
+                type="button"
+                title="Decrease font size"
+                style={{
+                  width: "28px",
+                  height: "24px",
+                  padding: 0,
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+                onClick={() =>
+                  setFontSize(
+                    fontSize > 5
+                      ? fontSize - 1
+                      : 5
+                  )
+                }
+              >
+                -
+              </button>
+
+              <Button
+                title={fontSize}
+              />
+
+              <button
+                type="button"
+                title="Increase font size"
+                style={{
+                  width: "28px",
+                  height: "24px",
+                  padding: 0,
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+                onClick={() =>
+                  setFontSize(
+                    fontSize + 1
+                  )
+                }
+              >
+                +
+              </button>
             </div>
+
+            {/* THEME */}
+
             <div
               style={{
                 display: "flex",
@@ -795,38 +1064,63 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
               }}
             >
               <div
-                className="tool-row"
                 style={{
-                  color: darkTheme ? "grey" : "#FDB813",
+                  color: darkTheme
+                    ? "grey"
+                    : "#FDB813",
                   fontSize: "22px",
                   cursor: "pointer",
                 }}
-                onClick={() => setTheme(false)}
+                onClick={() =>
+                  setTheme(false)
+                }
               >
                 &#9728;
               </div>
-              <div style={{ margin: "0px 5px", height: "24px" }}>
+
+              <div
+                style={{
+                  margin: "0px 5px",
+                  height: "24px",
+                }}
+              >
                 <Switch
                   checkedIcon={false}
                   uncheckedIcon={false}
                   height={24}
-                  onChange={setTheme}
-                  checked={darkTheme}
+                  onChange={
+                    setTheme
+                  }
+                  checked={
+                    darkTheme
+                  }
                 />
               </div>
+
               <IoMdMoon
-                color={darkTheme ? "#FDB813" : "grey"}
+                color={
+                  darkTheme
+                    ? "#FDB813"
+                    : "grey"
+                }
                 fontSize={20}
-                onClick={() => setTheme(true)}
+                onClick={() =>
+                  setTheme(true)
+                }
+                style={{
+                  cursor:
+                    "pointer",
+                }}
               />
             </div>
+
             <Menu />
           </div>
         </HeaderContainer>
 
-        <TopContainer
-          mode={containerViewMode}
-        >
+        {/* EDITORS */}
+
+        <TopContainer>
           <SplitPane
             minSize={100}
             maxSize={800}
@@ -839,50 +1133,47 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                 20
               }px)`,
               width: "100%",
-              borderLeft: "14px solid #adddd7",
-              borderRight: "14px solid #adddd7",
-              borderBottom: "14px solid #adddd7",
-              boxShadow: "0 0 10px #5eead4",
+              borderLeft:
+                "14px solid #adddd7",
+              borderRight:
+                "14px solid #adddd7",
+              borderBottom:
+                "14px solid #adddd7",
+              boxShadow:
+                "0 0 10px #5eead4",
             }}
           >
-            <div>
+            {/* CSV INPUT */}
+
+            <div
+              style={{
+                position:
+                  "relative",
+              }}
+            >
               <Editor
                 height={`calc(100vh - ${
                   headerContainerHeight +
                   footerContainerHeight -
                   20
                 }px)`}
-                theme="vs-dark"
+                theme={
+                  darkTheme
+                    ? "vs-dark"
+                    : "vs"
+                }
                 path="file:///csv-to-json/input.csv"
                 value={
-                  tempEditorData ||
-                  editorData ||
-                  ""
+                  editorData
                 }
-                onMount={(editorInstance) => {
-                  editorInstance.focus();
-
-                  editorInstance.onKeyDown(
-                    (event) => {
-                      const {
-                        keyCode,
-                        ctrlKey,
-                        metaKey,
-                      } = event;
-
-                      if (
-                        keyCode === 52 &&
-                        (metaKey || ctrlKey)
-                      ) {
-                        setIsPasting(true);
-                      }
-                    },
+                onChange={(
+                  value
+                ) => {
+                  setEditorData(
+                    value || ""
                   );
                 }}
                 language="plaintext"
-                onChange={(data) => {
-                  setEditorData(data || "");
-                }}
                 options={{
                   minimap: {
                     enabled: false,
@@ -890,6 +1181,10 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                   overviewRulerLanes: 0,
                   wordWrap: "on",
                   fontSize: `${fontSize}px`,
+                  scrollbar: {
+                    handleMouseWheel: true,
+                    alwaysConsumeMouseWheel: true,
+                  },
                   renderLineHighlight:
                     "none",
                   isWholeLine: true,
@@ -897,7 +1192,14 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
               />
             </div>
 
-            <div>
+            {/* JSON OUTPUT */}
+
+            <div
+              style={{
+                position:
+                  "relative",
+              }}
+            >
               <Editor
                 height={`calc(100vh - ${
                   headerContainerHeight +
@@ -905,592 +1207,557 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                   20
                 }px)`}
                 width="100%"
-                theme="vs-dark"
+                theme={
+                  darkTheme
+                    ? "vs-dark"
+                    : "vs"
+                }
                 path="file:///csv-to-json/result.json"
-                value={resultData || ""}
+                value={
+                  resultData || ""
+                }
                 onMount={
                   onMountResultEditor
                 }
                 language="json"
                 options={{
+                  readOnly: false,
                   minimap: {
                     enabled: false,
                   },
                   overviewRulerLanes: 0,
                   wordWrap: "on",
                   fontSize: `${fontSize}px`,
+                  scrollbar: {
+                    handleMouseWheel: true,
+                    alwaysConsumeMouseWheel: true,
+                  },
                   renderLineHighlight:
                     "none",
                   isWholeLine: true,
                 }}
               />
+
+              {/* ERROR */}
+
+              {error && (
+                <div
+                  style={{
+                    position:
+                      "absolute",
+                    left: "12px",
+                    right: "12px",
+                    bottom: "12px",
+                    padding:
+                      "10px 12px",
+                    background:
+                      "#fee2e2",
+                    color:
+                      "#991b1b",
+                    border:
+                      "1px solid #fecaca",
+                    borderRadius:
+                      "6px",
+                    fontSize:
+                      "13px",
+                    zIndex: 5,
+                  }}
+                >
+                  {error}
+                </div>
+              )}
             </div>
           </SplitPane>
         </TopContainer>
 
-        <BottomContainer
-          $show={
-            containerViewMode === "B"
-          }
-        >
+        {/* TOOLBAR */}
+
+        <BottomContainer>
           <div
             style={{
               display: "flex",
-              position: "relative",
+              position:
+                "relative",
+              height: `calc(100vh - ${footerContainerHeight}px)`,
               borderTop:
                 "1px solid darkgrey",
             }}
           >
             <div
               style={{
-                display: "flex",
-                flexDirection: "column",
+                display:
+                  "flex",
+                flexDirection:
+                  "column",
                 backgroundColor:
-                  "#5e5e5e9b",
+                  "#f1f5f9",
+                width: "100%",
               }}
             >
-              <div
-                className="tool-row"
-                style={{
-                  padding: "0px 5px",
-                  display: "flex",
-                  gap: "5px",
-                }}
-              >
-                {!sId && (
-                  <>
-                    <div
-                      style={{
-                        margin:
-                          "4px 4px 2px 4px",
-                      }}
-                    >
-                      <Button
-                        title="Paste"
-                        onClick={
-                          onClickPaste
-                        }
-                        icon={
-                          <MdOutlineContentPaste
-                            size={40}
-                          />
-                        }
-                      />
-                    </div>
+              <ToolBar>
+                {/* PASTE */}
 
-                    <div
-                      style={{
-                        margin:
-                          "4px 4px 2px 4px",
-                      }}
-                    >
-                      <Button
-                        title="Clear"
-                        onClick={clear}
-                        icon={
-                          <AiOutlineDelete
-                            size={10}
-                          />
-                        }
-                      />
-                    </div>
-                  </>
-                )}
+                <ToolBtn
+                  onClick={
+                    onClickPaste
+                  }
+                >
+                  <MdOutlineContentPaste />
+                  Paste
+                </ToolBtn>
 
-                <div
+                {/* UPLOAD */}
+
+                <label
                   style={{
-                    margin:
-                      "4px 4px 2px 4px",
+                    display:
+                      "inline-flex",
                   }}
                 >
-                  <Button
-                    title="Search"
-                    onClick={findWord}
-                    icon={<IoSearch />}
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={
+                      handleFileUpload
+                    }
+                    style={{
+                      display:
+                        "none",
+                    }}
                   />
-                </div>
 
-                <CopyToClipboard
-                  text={resultData}
-                  onCopy={() => {
-                    setCopyResButtonTitle(
-                      "Copied",
-                    );
-                  }}
-                >
-                  <div
+                  <ToolBtn
+                    as="span"
                     style={{
-                      margin:
-                        "4px 4px 2px 4px",
+                      cursor:
+                        "pointer",
                     }}
                   >
-                    <Button
-                      title={
-                        copyResButtonTitle
-                      }
-                      icon={
-                        <IoCopyOutline />
-                      }
+                    <IoMdDownload
+                      style={{
+                        transform:
+                          "rotate(180deg)",
+                      }}
                     />
-                  </div>
-                </CopyToClipboard>
+                    Upload CSV
+                  </ToolBtn>
+                </label>
 
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    height: "24px",
-                    marginTop: "5px",
-                    display: "none",
-                  }}
+                {/* CLEAR */}
+
+                <ToolBtn
+                  onClick={clear}
                 >
-                  <div
-                    style={{
-                      color: darkTheme
-                        ? "grey"
-                        : "#FDB813",
-                      fontSize: "22px",
-                      cursor: "pointer",
-                    }}
-                    onClick={() =>
-                      setTheme(false)
-                    }
-                  >
-                    &#9728;
-                  </div>
+                  <AiOutlineDelete />
+                  Clear
+                </ToolBtn>
 
-                  <div
-                    style={{
-                      margin: "0px 5px",
-                    }}
-                  >
-                    <Switch
-                      checkedIcon={false}
-                      uncheckedIcon={false}
-                      height={24}
-                      onChange={(e) =>
-                        setTheme(e)
-                      }
-                      checked={darkTheme}
-                    />
-                  </div>
+                {/* HISTORY */}
 
-                  <IoMdMoon
-                    color={
-                      darkTheme
-                        ? "#FDB813"
-                        : "grey"
-                    }
-                    fontSize={20}
-                    style={{
-                      cursor: "pointer",
-                    }}
-                    onClick={() =>
-                      setTheme(true)
-                    }
-                  />
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  marginTop: "2px",
-                  gap: "10px",
-                  height: "28px",
-                  alignItems: "center",
-                }}
-              >
-                <div
-                  style={{
-                    margin:
-                      "4px 4px 2px 8px",
-                  }}
+                <ToolBtn
+                  onClick={() =>
+                    setIsHistoryOpen(
+                      true
+                    )
+                  }
                 >
-                  <Button
-                    title="Download"
+                  <MdHistory />
+                  History
+                </ToolBtn>
+
+                {/* DOWNLOAD */}
+
+                <ToolBtn
+                  onClick={() =>
+                    download(
+                      "converted.json",
+                      resultData
+                    )
+                  }
+                  disabled={
+                    !resultData
+                  }
+                >
+                  <IoMdDownload />
+                  Download
+                </ToolBtn>
+
+                {/* PASTE RESULT */}
+
+                <ToolBtn
+                  onClick={() => {
+                    if (
+                      resultData
+                    ) {
+                      setEditorData(
+                        resultData
+                      );
+                    }
+                  }}
+                  disabled={
+                    !resultData
+                  }
+                >
+                  <LuMoveHorizontal />
+                  Paste Result
+                </ToolBtn>
+
+                <ToolRight>
+                  {/* DOWNLOAD RESULT */}
+
+                  <ToolBtn
                     onClick={() =>
                       download(
-                        "result.json",
-                        resultData,
+                        "converted.json",
+                        resultData
                       )
                     }
-                    icon={
-                      <IoMdDownload />
+                    disabled={
+                      !resultData
                     }
-                  />
-                </div>
-
-                <div>
-                      <Button
-                        title="Paste Result"
-                        onClick={() => {
-                          if (resultData) {
-                            setEditorData(() => resultData);
-                            setNewData(resultData);
-                          }
-                        }}
-                        icon={<LuMoveHorizontal />}
-                      />
-                    </div>
-
-                <span
-                      style={{
-                        color: "lightgray",
-                        fontSize: "14px",
-                        marginLeft: "48px",
-                        display: "none",
-                      }}
-                    >
-                      Font Size :
-                    </span>
-
-                <div
-                      style={{
-                        marginLeft: "5px",
-                        display: "none",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        gap: "7px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          cursor: "pointer",
-                        }}
-                        onClick={() =>
-                          setFontSize(fontSize > 5 ? fontSize - 1 : 5)
-                        }
-                      >
-                        <div
-                          style={{
-                            marginTop: "4px",
-                            marginLeft: "7px",
-
-                            color: "lightgray",
-                            transform:
-                              "rotate(90deg) translateX(-1px) translateY(5px) scaleY(1.2)",
-                          }}
-                        >
-                          &#10073;
-                        </div>
-                      </div>
-                      <div>
-                        <Button
-                          title={fontSize}
-                          style={{
-                            backgroundColor: "white",
-                            height: "20px",
-                            width: "28px",
-                            padding: "0px",
-                          }}
-                        />
-                      </div>
-                      <div
-                        style={{
-                          cursor: "pointer",
-                        }}
-                        onClick={() => setFontSize(fontSize + 1)}
-                      >
-                        <div
-                          style={{
-                            marginTop: "-5px",
-                            marginLeft: "7px",
-
-                            color: "lightgray",
-                            transform:
-                              "rotate(45deg) translateX(-1px) translateY(5px)",
-                          }}
-                        >
-                          {" "}
-                          &#10006;{" "}
-                        </div>
-                      </div>
-                    </div>
-              </div>
-
-              {!sId && (
-                <div
-                  style={{
-                    display: "flex",
-                    marginTop: "2px",
-                    gap: "15px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      padding: "5px 8px",
-                      backgroundColor:
-                        "#1b1b1bb7",
-                      marginLeft: "8px",
-                      borderRadius: "2px",
-                    }}
                   >
-                    <div
-                      style={{
-                        color: "white",
-                        fontSize: "14px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "12px",
-                        }}
-                      >
-                        HISTORY
-                      </span>
-                      : &nbsp;
-                    </div>
+                    <IoMdDownload />
+                    Download Result
+                  </ToolBtn>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        minWidth: "370px",
-                        maxWidth: "370px",
-                        overflowX: "scroll",
-                        border:
-                          "1px solid grey",
-                        padding: "2px",
-                        borderRadius: "4px",
-                        position: "relative",
-                      }}
-                      className="history-scrollbar"
-                      id="myDivId"
-                    >
-                      {Object.keys(tabData).length <
-                        1 && (
-                        <div
-                          style={{
-                            color: "lightgray",
-                          }}
-                        >
-                          Empty
-                        </div>
-                      )}
+                  {/* COPY */}
 
-                      {getTimeDiff(
-                        Object.keys(tabData),
+                  <CopyToClipboard
+                    text={
+                      resultData ||
+                      ""
+                    }
+                    onCopy={() =>
+                      setCopyResButtonTitle(
+                        "Copied"
                       )
-                        .reverse()
-                        .map(
-                          (
-                            {
-                              timestamp,
-                              diffStr,
-                            },
-                            i,
-                          ) => {
-                            const date =
-                              new Date(
-                                Number(timestamp),
-                              );
+                    }
+                  >
+                    <ToolBtn
+                      disabled={
+                        !resultData
+                      }
+                    >
+                      <IoCopyOutline />
+                      {
+                        copyResButtonTitle
+                      }
+                    </ToolBtn>
+                  </CopyToClipboard>
 
-                            const time =
-                              date.toLocaleString();
+                  <ToolDivider />
 
-                            return (
-                              <div
-                                className="saved-tab"
-                                title={time}
-                                key={i}
-                                onMouseEnter={() =>
-                                  setTimestampHovered(
-                                    timestamp,
-                                  )
-                                }
-                                onMouseLeave={() =>
-                                  setTimestampHovered(
-                                    null,
-                                  )
-                                }
-                              >
-                                <div
-                                  style={{
-                                    cursor:
-                                      "pointer",
-                                  }}
-                                  onClick={() => {
-                                    const savedData =
-                                      getTabData(
-                                        timestamp,
-                                      );
+                  {/* SEARCH */}
 
-                                    setEditorData(
-                                      savedData,
-                                    );
-
-                                    setNewData(
-                                      savedData,
-                                    );
-
-                                    deleteTab(
-                                      timestamp,
-                                    );
-                                  }}
-                                >
-                                  {diffStr}
-                                </div>
-
-                                <div
-                                  className="icon"
-                                  onClick={() =>
-                                    deleteTab(
-                                      timestamp,
-                                    )
-                                  }
-                                >
-                                  <IoMdClose />
-                                </div>
-                              </div>
-                            );
-                          },
-                        )}
-                    </div>
-                  </div>
-                </div>
-              )}
+                  <ToolBtn
+                    onClick={
+                      findWord
+                    }
+                  >
+                    <IoSearch />
+                    Search
+                  </ToolBtn>
+                </ToolRight>
+              </ToolBar>
             </div>
           </div>
 
-          {!sId && (
-            <div className="menu-container">
-              <div
-                style={{
-                  position: "absolute",
-                  right: "10px",
-                  bottom: "2px",
-                  display: "flex",
-                  fontSize: "10px",
-                }}
-              >
-                {HOME_NAV_LINKS.map(
-                  ({ href, label }) => (
-                    <Link
-                      className="menu-item"
-                      href={href}
-                      key={href}
-                    >
-                      {label}
-                    </Link>
-                  ),
-                )}
-              </div>
+          {/* FOOTER NAV */}
+
+          <div className="menu-container">
+            <div
+              style={{
+                position:
+                  "absolute",
+                right: "10px",
+                bottom: "2px",
+                display:
+                  "flex",
+                fontSize:
+                  "10px",
+              }}
+            >
+              {HOME_NAV_LINKS.map(
+                ({
+                  href,
+                  label,
+                }) => (
+                  <Link
+                    className="menu-item"
+                    href={
+                      href
+                    }
+                    key={
+                      href
+                    }
+                  >
+                    {label}
+                  </Link>
+                )
+              )}
             </div>
-          )}
+          </div>
         </BottomContainer>
 
-        {!sId && (
-          <HomeSeoSection>
-            <div className="content">
-              <h2>
-                Online CSV to JSON Converter
-              </h2>
+        {/* HISTORY */}
 
-              <p>
-                CSV to JSON Converter transforms
-                comma-separated values into clean,
-                formatted JSON. Paste your CSV data
-                into the left editor and get the JSON
-                result instantly.
-              </p>
+        {isHistoryOpen && (
+          <HistoryOverlay
+            role="presentation"
+            onClick={() =>
+              setIsHistoryOpen(
+                false
+              )
+            }
+          >
+            <HistoryModal
+              role="dialog"
+              aria-modal="true"
+              onClick={(
+                event
+              ) =>
+                event.stopPropagation()
+              }
+            >
+              <HistoryModalHeader>
+                <h2>
+                  CSV to JSON Conversion History
+                </h2>
 
-              <p>
-                The first row of the CSV is used as the
-                JSON property names, while every
-                following row becomes a JSON object.
-              </p>
+                <button
+                  type="button"
+                  aria-label="Close history"
+                  onClick={() =>
+                    setIsHistoryOpen(
+                      false
+                    )
+                  }
+                >
+                  <IoMdClose />
+                </button>
+              </HistoryModalHeader>
 
-              <div className="link-row">
-                {HOME_NAV_LINKS.map(
-                  ({ href, label }) => (
-                    <Link
-                      href={href}
-                      key={href}
-                    >
-                      {label}
-                    </Link>
-                  ),
+              <HistoryCards>
+                {history.length ===
+                  0 && (
+                  <div
+                    style={{
+                      color:
+                        "#94a3b8",
+                    }}
+                  >
+                    No saved history
+                  </div>
                 )}
-              </div>
 
-              <h3>
-                Why use CSV to JSON Converter?
-              </h3>
+                {history.map(
+                  (
+                    item
+                  ) => (
+                    <HistoryCard
+                      key={
+                        item.id
+                      }
+                    >
+                      <div
+                        className="card-content"
+                        title={
+                          item.input
+                        }
+                        onClick={() =>
+                          restoreHistory(
+                            item
+                          )
+                        }
+                      >
+                        <span className="timestamp">
+                          {
+                            item.time
+                          }
+                        </span>
 
-              <ul>
-                <li>
-                  Convert CSV rows into JSON objects.
-                </li>
-                <li>
-                  Automatically use CSV headers as JSON
-                  property names.
-                </li>
-                <li>
-                  Support commas inside quoted CSV
-                  values.
-                </li>
-                <li>
-                  Support escaped quotes inside CSV
-                  data.
-                </li>
-                <li>
-                  Automatically detect numbers,
-                  booleans, and null values.
-                </li>
-                <li>
-                  Copy or download the formatted JSON.
-                </li>
-              </ul>
+                        <span className="preview">
+                          CSV:{" "}
+                          {item.input.substring(
+                            0,
+                            120
+                          )}
+                        </span>
 
-              <h3>Common questions</h3>
+                        <span className="preview">
+                          JSON:{" "}
+                          {item.output.substring(
+                            0,
+                            300
+                          )}
+                        </span>
+                      </div>
 
-              <h4>
-                How does CSV to JSON conversion work?
-              </h4>
-
-              <p>
-                The first row is treated as column
-                headers. Each following row is converted
-                into a JSON object using those headers
-                as property names.
-              </p>
-
-              <h4>
-                Does the converter support quoted CSV
-                values?
-              </h4>
-
-              <p>
-                Yes. CSV values wrapped in double
-                quotes can contain commas and line
-                breaks without being split incorrectly.
-              </p>
-
-              <h4>
-                Are numbers automatically converted?
-              </h4>
-
-              <p>
-                Yes. Numeric values are converted to
-                JSON numbers. The values true, false,
-                and null are also converted to their
-                corresponding JSON data types.
-              </p>
-
-              <h4>
-                Is CSV to JSON Converter free?
-              </h4>
-
-              <p>
-                Yes. This CSV to JSON Converter is free
-                to use and runs directly in your web
-                browser.
-              </p>
-            </div>
-          </HomeSeoSection>
+                      <button
+                        className="card-delete"
+                        type="button"
+                        onClick={() =>
+                          deleteHistory(
+                            item.id
+                          )
+                        }
+                      >
+                        Delete
+                      </button>
+                    </HistoryCard>
+                  )
+                )}
+              </HistoryCards>
+            </HistoryModal>
+          </HistoryOverlay>
         )}
+
+        {/* SEO CONTENT */}
+
+        <HomeSeoSection>
+          <div className="content">
+            <h2>
+              Free Online CSV to JSON Converter
+            </h2>
+
+            <p>
+              CSV to JSON Converter is a free
+              online tool that converts CSV data
+              into clean and properly formatted JSON
+              directly in your browser.
+            </p>
+
+            <p>
+              Paste CSV data into the input editor
+              or upload a CSV file to instantly
+              convert rows and columns into a JSON
+              array of objects.
+            </p>
+
+            <div className="link-row">
+              {HOME_NAV_LINKS.map(
+                ({
+                  href,
+                  label,
+                }) => (
+                  <Link
+                    href={href}
+                    key={href}
+                  >
+                    {label}
+                  </Link>
+                )
+              )}
+            </div>
+
+            <h3>
+              Why use this CSV to JSON Converter?
+            </h3>
+
+            <ul>
+              <li>
+                Convert CSV to JSON instantly
+                in your browser.
+              </li>
+
+              <li>
+                Upload CSV files directly from
+                your computer.
+              </li>
+
+              <li>
+                Automatically use the first
+                CSV row as JSON property names.
+              </li>
+
+              <li>
+                Convert CSV rows into JSON
+                objects.
+              </li>
+
+              <li>
+                Support quoted CSV values and
+                escaped quotation marks.
+              </li>
+
+              <li>
+                Automatically detect numbers,
+                booleans, and null values.
+              </li>
+
+              <li>
+                Copy or download the converted
+                JSON.
+              </li>
+
+              <li>
+                No server-side processing is
+                required.
+              </li>
+            </ul>
+
+            <h3>
+              Common Questions
+            </h3>
+
+            <h4>
+              What is CSV to JSON conversion?
+            </h4>
+
+            <p>
+              CSV to JSON conversion transforms
+              comma-separated data into structured
+              JSON objects. JSON is commonly used
+              for APIs, web applications, databases,
+              and data exchange.
+            </p>
+
+            <h4>
+              How do I convert CSV to JSON?
+            </h4>
+
+            <p>
+              Paste your CSV data into the input
+              editor or upload a CSV file. The first
+              row is used as the column headers and
+              each following row is converted into
+              a JSON object.
+            </p>
+
+            <h4>
+              Can I convert a CSV file to JSON?
+            </h4>
+
+            <p>
+              Yes. Use the Upload CSV button to
+              select a CSV file from your computer.
+              The file is processed directly in
+              your browser.
+            </p>
+
+            <h4>
+              Does this converter support quoted CSV values?
+            </h4>
+
+            <p>
+              Yes. The converter supports CSV
+              fields enclosed in quotation marks,
+              including values containing commas,
+              line breaks, and escaped quotation
+              marks.
+            </p>
+
+            <h4>
+              Is this CSV to JSON converter free?
+            </h4>
+
+            <p>
+              Yes. This CSV to JSON converter is
+              free to use online and processes the
+              conversion directly in your browser.
+            </p>
+          </div>
+        </HomeSeoSection>
       </main>
     </>
   );

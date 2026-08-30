@@ -1,74 +1,39 @@
 "use client";
-import Editor from "@monaco-editor/react";
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { css, styled } from "styled-components";
-import SplitPane from "react-split-pane";
-import {
-  TrimValueState,
-  decompress,
-  getContainerMode,
-  getMode,
-  getTimeDiff,
-  saveContainerMode,
-  saveHistory,
-  setMode,
-} from "../../utils";
-import { useParams } from "next/navigation";
 
+import Editor from "@monaco-editor/react";
+import { useEffect, useState } from "react";
+import { styled } from "styled-components";
+import SplitPane from "react-split-pane";
 import Switch from "react-switch";
 import CopyToClipboard from "react-copy-to-clipboard";
-import { IoMdClose } from "react-icons/io";
-import SavedTabData from "../../Components/CustomStates/SavedTabData";
-// import { LuMenu } from "react-icons/lu";
-// import { MdClose } from "react-icons/md";
-import { IoMdMoon } from "react-icons/io";
-import { HOME_JSON_LD } from "../seo";
-import Link from "next/link";
-// import BookmarkButton from "@/Components/BookmarkButton";
+import { IoMdClose, IoMdMoon, IoMdDownload } from "react-icons/io";
+import {
+  MdHistory,
+  MdOutlineContentPaste,
+} from "react-icons/md";
 import { AiOutlineDelete } from "react-icons/ai";
-import { IoSearch } from "react-icons/io5";
-import { IoCopyOutline } from "react-icons/io5";
-import { IoMdDownload } from "react-icons/io";
+import { IoSearch, IoCopyOutline } from "react-icons/io5";
 import { LuMoveHorizontal } from "react-icons/lu";
-import Button from "@/Components/Buttons/Button";
+import Link from "next/link";
 import Menu from "@/Components/Menu";
-import { useBookmarkStatus } from "@/Components/CustomStates/CheckBookmark";
-// import BannerAdC from "@/Components/Ads/BannerAdC";
-import { MdHistory, MdOutlineContentPaste } from "react-icons/md";
+import Button from "@/Components/Buttons/Button";
 
 const headerContainerHeight = 70;
 const footerContainerHeight = 80;
+
 const HOME_NAV_LINKS = [
   { href: "/", label: "Home" },
-  // { href: "/json-to-xml", label: "JSON to XML" },
+  { href: "/blog", label: "Blog" },
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact" },
   { href: "/privacy-policy", label: "Privacy Policy" },
 ];
-const useBrowserLayoutEffect =
-  typeof window === "undefined" ? useEffect : useLayoutEffect;
-
-const minifyJsonData = (data) => JSON.stringify(JSON.parse(data));
-
-const trimEditorData = (data, trimValue) => {
-  const trimmedData = data?.trim() || "";
-  if (
-    trimValue &&
-    trimmedData.substring(
-      trimmedData.length - trimValue.length,
-      trimmedData.length,
-    ) === trimValue
-  ) {
-    return trimmedData.substring(0, trimmedData.length - trimValue.length);
-  }
-  return trimmedData;
-};
 
 const HeaderContainer = styled.div`
   width: 100%;
   height: 50px;
   padding: 0px 15px;
-  display: ${(p) => (p.$show ||true ? "flex" : "none")};
+  display: flex;
   justify-content: space-between;
   gap: 20px;
   align-items: center;
@@ -92,28 +57,12 @@ const HeaderContainer = styled.div`
     white-space: nowrap;
   }
 
-  .bookmark-message {
-    flex: 1;
-    min-width: 180px;
-    text-align: center;
-    font-size: 15px;
-    font-weight: 500;
-  }
-
-  .menu-toggle {
-    cursor: pointer;
-  }
-
   @media (max-width: 760px) {
     gap: 10px;
     padding: 0px 10px;
 
     .brand-title {
       font-size: 20px;
-    }
-
-    .bookmark-message {
-      display: none;
     }
   }
 
@@ -136,7 +85,6 @@ const HomeSeoSection = styled.section`
   .content {
     max-width: 960px;
     margin: 0 auto;
-    
   }
 
   h2 {
@@ -196,634 +144,817 @@ const HomeSeoSection = styled.section`
 
 const TopContainer = styled.div`
   width: 100%;
-  ${(p) => {
-    return p.mode === "H"
-      ? css`
-          height: calc(100vh - ${headerContainerHeight+footerContainerHeight-20}px);
-        `
-      : css`
-          height: calc(100vh - ${footerContainerHeight+headerContainerHeight-20}px);
-        `;
-  }}
+  height: calc(
+    100vh - ${headerContainerHeight + footerContainerHeight - 20}px
+  );
 `;
-
 
 const BottomContainer = styled.div`
   width: 100%;
   height: ${footerContainerHeight}px;
   display: flex;
   flex-direction: column;
-  background: #f1f5f9;
+  background-color: #f1f5f9;
   z-index: 100;
-  border-top: 1px solid #cbd5e1;
 
-  .footer-toolbar {
-    width: 100%;
-    min-height: 61px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 6px 12px;
-    box-sizing: border-box;
-    background: #f1f5f9;
-    gap: 10px;
-  }
-
-  .footer-left,
-  .footer-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .footer-right {
-    margin-left: auto;
-  }
-
-  .footer-divider {
-    width: 1px;
-    height: 28px;
-    background: #d5dce5;
-    margin: 0 4px;
-  }
-
-  .footer-nav {
-    height: 35px;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0 15px;
-    box-sizing: border-box;
-    background: #e8eef2;
-    border-top: 1px solid #d5dce5;
+  .menu-container {
+    position: relative;
+    height: 14px;
+    color: #12343b;
   }
 
   .menu-item {
-    font-size: 14px;
-    font-weight: 400;
-    padding: 0 7px;
-    color: #263f4d;
+    font-weight: 200;
+    font-size: 12px;
+    height: 15px;
+    padding: 0px 4px;
+    cursor: pointer;
+    color: #12343b;
     text-decoration: none;
-    white-space: nowrap;
-    transition: color 0.15s ease;
-  }
 
-  .menu-item:hover {
-    color: #0f766e;
-    text-decoration: underline;
-  }
-
-  @media (max-width: 900px) {
-    .footer-toolbar {
-      overflow-x: auto;
-      justify-content: flex-start;
-    }
-
-    .footer-right {
-      margin-left: 0;
-    }
-
-    .footer-nav {
-      overflow-x: auto;
-      justify-content: flex-start;
-    }
-  }
-
-  @media (max-width: 600px) {
-    .footer-toolbar {
-      padding: 5px 8px;
-      gap: 6px;
-    }
-
-    .footer-left,
-    .footer-right {
-      gap: 6px;
-    }
-
-    .menu-item {
-      font-size: 12px;
-      padding: 0 5px;
+    &:hover {
+      text-decoration: underline;
     }
   }
 `;
 
-const FooterButton = styled.button`
-  height: 42px;
-  display: inline-flex;
+const ToolBar = styled.div`
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 7px;
-
-  padding: 0 16px;
-
-  border: 1px solid #d9e2ec;
-  border-radius: 9px;
-
+  gap: 8px;
   background: #ffffff;
-  color: #334155;
+  padding: 10px 12px;
+  border-radius: 10px;
+  flex-wrap: wrap;
+`;
 
-  font-size: 16px;
-  font-weight: 400;
-
+const ToolBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid ${(p) =>
+    p.$primary ? "#0f9d78" : "#e2e8f0"};
+  background: ${(p) =>
+    p.$primary ? "#0f9d78" : "#ffffff"};
+  color: ${(p) =>
+    p.$primary ? "#ffffff" : "#334155"};
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
-
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.1s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 
   &:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-    box-shadow: 0 2px 5px rgba(15, 23, 42, 0.06);
+    background: ${(p) =>
+      p.$primary ? "#0c8a67" : "#f1f5f9"};
+    border-color: ${(p) =>
+      p.$primary ? "#0c8a67" : "#cbd5e1"};
   }
 
   &:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
   }
 
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    box-shadow: none;
   }
 
   svg {
-    font-size: 18px;
-    flex-shrink: 0;
+    font-size: 16px;
+  }
+`;
+
+const ToolDivider = styled.div`
+  width: 1px;
+  height: 22px;
+  background: #e2e8f0;
+  margin: 0 4px;
+`;
+
+const ToolRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+
+  @media (max-width: 700px) {
+    margin-left: 0;
+  }
+`;
+
+const HistoryOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 38, 48, 0.6);
+`;
+
+const HistoryModal = styled.div`
+  width: min(760px, 100%);
+  max-height: min(620px, 90vh);
+  overflow: hidden;
+  border: 1px solid #adddd7;
+  border-radius: 12px;
+  background: #f8fbfb;
+  box-shadow: 0 14px 40px rgba(15, 38, 48, 0.3);
+`;
+
+const HistoryModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #dbe5e9;
+  color: #12343b;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
   }
 
-  @media (max-width: 600px) {
-    height: 38px;
-    padding: 0 11px;
-    font-size: 14px;
+  button {
+    border: 0;
+    background: transparent;
+    color: #12343b;
+    font-size: 24px;
+    cursor: pointer;
+  }
+`;
 
-    svg {
-      font-size: 16px;
-    }
+const HistoryCards = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 20px;
+`;
+
+const HistoryCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 260px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dbe5e9;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(36, 55, 70, 0.08);
+
+  .card-content {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    padding: 14px;
+    cursor: pointer;
+  }
+
+  .timestamp {
+    display: block;
+    overflow: hidden;
+    color: #12343b;
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .preview {
+    display: block;
+    overflow: hidden;
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.45;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 6;
+  }
+
+  .card-delete {
+    flex-shrink: 0;
+    width: 100%;
+    padding: 8px 12px;
+    border: 0;
+    border-top: 1px solid #dbe5e9;
+    background: #f8fbfb;
+    color: #963d32;
+    cursor: pointer;
   }
 `;
 
 function App() {
-  const { sId } = useParams();
-  const [isBookmarked, bookmark] = useBookmarkStatus();
-  const { tabData, save, getTabData, deleteTab } = SavedTabData();
-
   const [editorData, setEditorData] = useState("");
-
-  /* Timestamp */
-  const [timestampHovered, setTimestampHovered] = useState();
-  const tempEditorData = useMemo(() => {
-    if (timestampHovered) {
-      return getTabData(timestampHovered);
-    } else {
-      return "";
-    }
-  }, [timestampHovered]);
-
   const [resultData, setResultData] = useState("");
-
-  const [compressionType, setCompressionType] = useState("text");
-
-  const [editor, setEditor] = useState();
-  const [monaco, setMonaco] = useState();
-
-  const [trimValue, setTrimValue] = TrimValueState();
-  const [findValue, setFindValue] = useState("");
-  const [inputLanguage, setInputLanguage] = useState("");
-
-  const [containerViewMode, setContainerViewMode] = useState("B");
-  const [isContainerViewModeReady, setIsContainerViewModeReady] =
-    useState(false);
-
-  const updateContainerMode = (mode) => {
-    setContainerViewMode(mode);
-    saveContainerMode(mode);
-  };
-
+  const [error, setError] = useState("");
   const [darkTheme, setDarkTheme] = useState(false);
+  const [fontSize, setFontSize] = useState(14);
 
-  useBrowserLayoutEffect(() => {
-    setEditorData("");
-    setResultData("");
+  const [history, setHistory] = useState([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-    const savedContainerMode = getContainerMode();
-    setContainerViewMode(savedContainerMode === "B" ? "B" : "H");
-    setDarkTheme(getMode());
-    setIsContainerViewModeReady(true);
-  }, [sId]);
+  const [editor, setEditor] = useState(null);
+  const [monaco, setMonaco] = useState(null);
 
-  useEffect(() => {
-    const handler = () => {
-      setTimeout(() => {
-        editor.getAction("actions.find").run();
-      }, 500);
-    };
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [findValue]);
+  const [copyResButtonTitle, setCopyResButtonTitle] =
+    useState("Copy");
 
-  const [isPasting, setIsPasting] = useState(false);
-
-  const onMountResultEditor = (editor, monaco) => {
-    editor.onKeyDown((event) => {
-      const { keyCode, ctrlKey, metaKey } = event;
-      if (keyCode === 52 && (metaKey || ctrlKey)) {
-        event.preventDefault();
-      }
-    });
-
-    monaco.editor.defineTheme("myThemeDark", {
-      base: "vs-dark",
-      inherit: true,
-      rules: [],
-      colors: {},
-    });
-    monaco.editor.defineTheme("myThemeLight", {
-      base: "vs",
-      inherit: true,
-      rules: [],
-      colors: {},
-    });
-    const mode = getMode();
-
-    monaco.editor.setTheme(mode ? "myThemeDark" : "myThemeLight");
-    setEditor(editor);
-    setMonaco(monaco);
-  };
-
-  useEffect(() => {
-    if (!editor) {
+  /*
+   * Minify JSON.
+   *
+   * JSON.parse validates the input and
+   * JSON.stringify without spacing removes
+   * unnecessary whitespace.
+   */
+  const minifyJson = (jsonString) => {
+    if (!jsonString || !jsonString.trim()) {
+      setResultData("");
+      setError("");
       return;
     }
 
-    const output = resultData || "";
-    if (editor.getValue() !== output) {
-      editor.setValue(output);
-    }
-    editor.layout();
-  }, [editor, resultData]);
+    try {
+      setError("");
 
-  const setTheme = (isDark) => {
-    if (monaco) {
-      if (isDark) {
-        monaco.editor.setTheme("myThemeDark");
-      } else {
-        monaco.editor.setTheme("myThemeLight");
-      }
-      setDarkTheme(isDark);
-      setMode(isDark);
+      const parsedJson = JSON.parse(
+        jsonString
+      );
+
+      const minifiedJson =
+        JSON.stringify(parsedJson);
+
+      setResultData(minifiedJson);
+
+      saveToHistory(
+        jsonString,
+        minifiedJson
+      );
+    } catch (err) {
+      setResultData("");
+
+      setError(
+        err?.message ||
+          "Invalid JSON. Please check your JSON syntax."
+      );
     }
   };
 
-  const handleEval = (input) => {
-    try {
-      const evaluatedResult = Function(`"use strict"; return (${input});`)();
-      setResultData(JSON.stringify(evaluatedResult));
-    } catch (error) {
-      throw new Error();
-    }
+  /*
+   * Save history locally.
+   */
+  const saveToHistory = (
+    input,
+    output
+  ) => {
+    if (!input || !output) return;
+
+    const item = {
+      id: Date.now(),
+      input,
+      output,
+      time: new Date().toLocaleString(),
+    };
+
+    setHistory((previous) => {
+      const updated = [
+        item,
+        ...previous,
+      ].slice(0, 20);
+
+      try {
+        localStorage.setItem(
+          "json-minifier-history",
+          JSON.stringify(updated)
+        );
+      } catch {}
+
+      return updated;
+    });
   };
 
-  const prettifyOnChange = (data, isDecompressed) => {
+  /*
+   * Load history.
+   */
+  useEffect(() => {
     try {
-      setResultData(minifyJsonData(data));
+      const saved =
+        localStorage.getItem(
+          "json-minifier-history"
+        );
 
-      if (!isDecompressed) {
-        setInputLanguage("json");
-        setCompressionType("json");
+      if (saved) {
+        setHistory(
+          JSON.parse(saved)
+        );
       }
-    } catch {
-      if (isDecompressed) {
-        setCompressionType("text");
-        setResultData(data);
-      } else {
-        decompressTest(data);
-      }
-    }
-  };
+    } catch {}
+  }, []);
 
-  const onClickPaste = async (e) => {
+  /*
+   * Paste JSON from clipboard.
+   */
+  const onClickPaste = async () => {
     try {
-      const text = await navigator.clipboard.readText();
+      const text =
+        await navigator.clipboard.readText();
+
       if (text) {
         setEditorData(text);
-        setNewData(text);
+        minifyJson(text);
       }
     } catch {
-      // console.log("failed paste");
+      setError(
+        "Unable to read clipboard."
+      );
     }
   };
 
-  const [newData, setNewData] = useState("");
+  /*
+   * Upload JSON file.
+   */
+  const handleFileUpload = async (
+    event
+  ) => {
+    const file =
+      event.target.files?.[0];
 
-  useEffect(() => {
-    if (newData) {
-      const handler = setTimeout(() => {
-        const tabArr = Object.keys(tabData);
-        if (tabArr.length) {
-          if (getTabData(tabArr[0]) !== newData) {
-            save(newData);
-          }
-        } else {
-          save(newData);
-        }
-      }, [2000]);
+    if (!file) return;
 
-      return () => {
-        clearTimeout(handler);
-      };
-    }
-  }, [newData]);
-
-  const decompressTest = async (compressedData) => {
     try {
-      const res = await decompress(compressedData);
-      prettifyOnChange(res.result, true);
-      if (res.type) {
-        setCompressionType(res.type);
-      } else {
-        handleEval(compressedData);
+      setError("");
+
+      const text =
+        await file.text();
+
+      if (!text.trim()) {
+        throw new Error(
+          "The selected JSON file is empty."
+        );
       }
-    } catch {
-      // console.log("failed decompress");
+
+      setEditorData(text);
+      minifyJson(text);
+    } catch (err) {
+      setResultData("");
+
+      setError(
+        err?.message ||
+          "Unable to read the selected JSON file."
+      );
     }
+
+    event.target.value = "";
   };
 
-  // const prettyfyOnClick = () => {
-  //   if (editor) {
-  //     editor.getAction("editor.action.formatDocument").run();
-  //   }
-  // };
-  const findWord = () => {
-    if (editor) {
-      editor.getAction("actions.find").run();
-    }
-  };
-
-  const trim = () => {
-    return trimEditorData(editorData, trimValue);
-  };
-
-  useEffect(() => {
-    if (isContainerViewModeReady && !sId) {
-      saveHistory(editorData);
-    }
-  }, [editorData, isContainerViewModeReady, sId]);
-
-  useEffect(() => {
-    if (!isContainerViewModeReady) {
-      return;
-    }
-
-    const handler = setTimeout(() => {
-      prettifyOnChange(trim(), false);
-      if (editorData && isPasting) {
-        setNewData(editorData);
-        setIsPasting(false);
-      }
-    }, [500]);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [editorData, isContainerViewModeReady]);
-
-  const onClickTrim = () => {
-    prettifyOnChange(trim(), false);
-  };
-
-  useEffect(() => {
-    if (!isContainerViewModeReady) {
-      return;
-    }
-
-    const handler = setTimeout(() => {
-      onClickTrim();
-    }, [500]);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [trimValue, isContainerViewModeReady]);
-
+  /*
+   * Clear input/output.
+   */
   const clear = () => {
     setEditorData("");
     setResultData("");
+    setError("");
   };
 
-  const [copyButtonTitle, setCopyButtonTitle] = useState("Copy");
+  /*
+   * Download minified JSON.
+   */
+  const download = (
+    filename,
+    text
+  ) => {
+    if (!text) return;
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      if (copyButtonTitle !== "Copy") {
-        setTimeout(() => {
-          setCopyButtonTitle("Copy");
-        }, 4000);
+    const blob = new Blob(
+      [text],
+      {
+        type: "application/json;charset=utf-8;",
       }
-      return clearTimeout(handler);
-    }, 5000);
-  }, [copyButtonTitle]);
-
-  function resetFindToolbarPosition(width) {
-    editor.layout({ width: width });
-  }
-
-  // Copy Result
-
-  const [copyResButtonTitle, setCopyResButtonTitle] = useState("Copy");
-
-  /* Container View Mode */
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      if (copyResButtonTitle !== "Copy") {
-        setTimeout(() => {
-          setCopyResButtonTitle("Copy");
-        }, 1000);
-      }
-      return clearTimeout(handler);
-    }, 4000);
-  }, [copyResButtonTitle]);
-
-  function download(filename, text) {
-    var element = document.createElement("a");
-    element.setAttribute(
-      "href",
-      "data:text/plain;charset=utf-8," + encodeURIComponent(text),
     );
-    element.setAttribute("download", filename);
 
-    element.style.display = "none";
-    document.body.appendChild(element);
+    const url =
+      URL.createObjectURL(blob);
+
+    const element =
+      document.createElement("a");
+
+    element.href = url;
+    element.download =
+      filename;
+
+    document.body.appendChild(
+      element
+    );
 
     element.click();
 
-    document.body.removeChild(element);
-  }
+    document.body.removeChild(
+      element
+    );
 
-  const [fontSize, setFontSize] = useState(14);
+    URL.revokeObjectURL(url);
+  };
+
+  /*
+   * Copy button status.
+   */
+  useEffect(() => {
+    if (
+      copyResButtonTitle ===
+      "Copy"
+    ) {
+      return;
+    }
+
+    const timer = setTimeout(
+      () => {
+        setCopyResButtonTitle(
+          "Copy"
+        );
+      },
+      2000
+    );
+
+    return () =>
+      clearTimeout(timer);
+  }, [copyResButtonTitle]);
+
+  /*
+   * Automatically minify JSON
+   * when input changes.
+   */
+  useEffect(() => {
+    if (!editorData.trim()) {
+      setResultData("");
+      setError("");
+      return;
+    }
+
+    const timer = setTimeout(
+      () => {
+        minifyJson(
+          editorData
+        );
+      },
+      500
+    );
+
+    return () =>
+      clearTimeout(timer);
+  }, [editorData]);
+
+  /*
+   * Theme.
+   */
+  const setTheme = (isDark) => {
+    if (monaco) {
+      monaco.editor.setTheme(
+        isDark
+          ? "myThemeDark"
+          : "myThemeLight"
+      );
+    }
+
+    setDarkTheme(isDark);
+
+    try {
+      localStorage.setItem(
+        "json-minifier-theme",
+        isDark
+          ? "dark"
+          : "light"
+      );
+    } catch {}
+  };
+
+  /*
+   * Load theme.
+   */
+  useEffect(() => {
+    try {
+      const theme =
+        localStorage.getItem(
+          "json-minifier-theme"
+        );
+
+      if (theme === "dark") {
+        setDarkTheme(true);
+      }
+    } catch {}
+  }, []);
+
+  /*
+   * Monaco mount.
+   */
+  const onMountResultEditor = (
+    editorInstance,
+    monacoInstance
+  ) => {
+    monacoInstance.editor.defineTheme(
+      "myThemeDark",
+      {
+        base: "vs-dark",
+        inherit: true,
+        rules: [],
+        colors: {},
+      }
+    );
+
+    monacoInstance.editor.defineTheme(
+      "myThemeLight",
+      {
+        base: "vs",
+        inherit: true,
+        rules: [],
+        colors: {},
+      }
+    );
+
+    monacoInstance.editor.setTheme(
+      darkTheme
+        ? "myThemeDark"
+        : "myThemeLight"
+    );
+
+    setEditor(
+      editorInstance
+    );
+
+    setMonaco(
+      monacoInstance
+    );
+  };
+
+  /*
+   * Search.
+   */
+  const findWord = () => {
+    if (editor) {
+      editor
+        .getAction(
+          "actions.find"
+        )
+        ?.run();
+    }
+  };
+
+  /*
+   * Restore history.
+   */
+  const restoreHistory = (
+    item
+  ) => {
+    setEditorData(
+      item.input
+    );
+
+    setResultData(
+      item.output
+    );
+
+    setError("");
+    setIsHistoryOpen(
+      false
+    );
+  };
+
+  /*
+   * Delete history item.
+   */
+  const deleteHistory = (
+    id
+  ) => {
+    setHistory((previous) => {
+      const updated =
+        previous.filter(
+          (item) =>
+            item.id !== id
+        );
+
+      try {
+        localStorage.setItem(
+          "json-minifier-history",
+          JSON.stringify(
+            updated
+          )
+        );
+      } catch {}
+
+      return updated;
+    });
+  };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_JSON_LD) }}
-      />
-
       <main
         style={{
           minHeight: "100vh",
           width: "100%",
           overflowX: "hidden",
-          visibility: isContainerViewModeReady ? "visible" : "hidden",
         }}
       >
-        {
-          <HeaderContainer $show={containerViewMode === "H"}>
-            <div className="brand-nav">
-              <h1 className="brand-title">JSON Minifier </h1>
-            </div>
+        {/* HEADER */}
+
+        <HeaderContainer>
+          <div className="brand-nav">
+            <h1 className="brand-title">
+              JSON Minifier
+            </h1>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            {/* FONT SIZE */}
+
             <div
               style={{
-                width: "100%",
                 display: "flex",
-                justifyContent: "flex-end",
+                alignItems: "center",
+                gap: "5px",
+                color: "#12343b",
               }}
             >
-              {!isBookmarked && (
-                <button
-                  style={{ padding: "2px 8px" }}
-                  onClick={() => {
-                    const isMac = navigator.platform
-                      .toUpperCase()
-                      .includes("MAC");
+              <button
+                type="button"
+                title="Decrease font size"
+                style={{
+                  width: "28px",
+                  height: "24px",
+                  padding: 0,
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+                onClick={() =>
+                  setFontSize(
+                    fontSize > 5
+                      ? fontSize - 1
+                      : 5
+                  )
+                }
+              >
+                -
+              </button>
 
-                    alert(
-                      `To bookmark this page, press ${
-                        isMac ? "⌘ + D" : "Ctrl + D"
-                      }`,
-                    );
+              <Button
+                title={fontSize}
+              />
 
-                    bookmark();
-                  }}
-                >
-                  ⭐ To visit again, Bookmark this tool
-                </button>
-              )}
+              <button
+                type="button"
+                title="Increase font size"
+                style={{
+                  width: "28px",
+                  height: "24px",
+                  padding: 0,
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+                onClick={() =>
+                  setFontSize(
+                    fontSize + 1
+                  )
+                }
+              >
+                +
+              </button>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {/* THEME */}
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "24px",
+              }}
+            >
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  color: "#12343b",
+                  color: darkTheme
+                    ? "grey"
+                    : "#FDB813",
+                  fontSize: "22px",
+                  cursor: "pointer",
                 }}
+                onClick={() =>
+                  setTheme(false)
+                }
               >
-                <button type="button" title="Decrease font size" style={{ width: "28px", height: "24px", padding: 0, fontSize: "16px" }} onClick={() => setFontSize(fontSize > 5 ? fontSize - 1 : 5)}>-</button>
-                <Button title={fontSize} />
-                <button type="button" title="Increase font size" style={{ width: "28px", height: "24px", padding: 0, fontSize: "16px" }} onClick={() => setFontSize(fontSize + 1)}>+</button>
+                &#9728;
               </div>
+
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  margin: "0px 5px",
                   height: "24px",
                 }}
               >
-                <div
-                  className="tool-row"
-                  style={{
-                    color: darkTheme ? "grey" : "#FDB813",
-                    fontSize: "22px",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => setTheme(false)}
-                >
-                  &#9728;
-                </div>
-                <div style={{ margin: "0px 5px", height: "24px" }}>
-                  <Switch
-                    checkedIcon={false}
-                    uncheckedIcon={false}
-                    height={24}
-                    onChange={setTheme}
-                    checked={darkTheme}
-                  />
-                </div>
-                <IoMdMoon
-                  color={darkTheme ? "#FDB813" : "grey"}
-                  fontSize={20}
-                  onClick={() => setTheme(true)}
-                  style={{ cursor: "pointer" }}
+                <Switch
+                  checkedIcon={false}
+                  uncheckedIcon={false}
+                  height={24}
+                  onChange={
+                    setTheme
+                  }
+                  checked={
+                    darkTheme
+                  }
                 />
               </div>
-              <Menu />
+
+              <IoMdMoon
+                color={
+                  darkTheme
+                    ? "#FDB813"
+                    : "grey"
+                }
+                fontSize={20}
+                onClick={() =>
+                  setTheme(true)
+                }
+                style={{
+                  cursor:
+                    "pointer",
+                }}
+              />
             </div>
-          </HeaderContainer>
-        }
-        <TopContainer mode={containerViewMode}>
+
+            <Menu />
+          </div>
+        </HeaderContainer>
+
+        {/* EDITORS */}
+
+        <TopContainer>
           <SplitPane
             minSize={100}
             maxSize={800}
             defaultSize="50%"
             split="vertical"
             style={{
-              // height: `calc(100vh - ${
-              //   containerViewMode === "H"
-              //     ? headerContainerHeight
-              //     : footerContainerHeight
-              // }px)`,
               height: `calc(100vh - ${
-                headerContainerHeight+footerContainerHeight-20
+                headerContainerHeight +
+                footerContainerHeight -
+                20
               }px)`,
               width: "100%",
-              borderLeft: "14px solid #adddd7",
-              borderRight: "14px solid #adddd7",
-              borderBottom: "14px solid #adddd7",
-              boxShadow: "0 0 10px #5eead4",
-            }}
-            onDragFinished={(e) => {
-              resetFindToolbarPosition(window.screen.width - e);
+              borderLeft:
+                "14px solid #adddd7",
+              borderRight:
+                "14px solid #adddd7",
+              borderBottom:
+                "14px solid #adddd7",
+              boxShadow:
+                "0 0 10px #5eead4",
             }}
           >
-            <div>
+            {/* JSON INPUT */}
+
+            <div
+              style={{
+                position:
+                  "relative",
+              }}
+            >
               <Editor
-                // height={`calc(100vh - ${
-                //   containerViewMode === "H"
-                //     ? headerContainerHeight
-                //     : footerContainerHeight
-                // }px)`}
                 height={`calc(100vh - ${
-                  headerContainerHeight+footerContainerHeight-20
+                  headerContainerHeight +
+                  footerContainerHeight -
+                  20
                 }px)`}
-                theme="vs-dark"
-                path="file:///json-beautifier/input.json"
-                value={tempEditorData || editorData || ""}
-                onMount={(editor) => {
-                  editor.focus();
-                  editor.onKeyDown((event) => {
-                    const { keyCode, ctrlKey, metaKey } = event;
-                    if (keyCode === 52 && (metaKey || ctrlKey)) {
-                      setIsPasting(true);
-                    }
-                  });
+                theme={
+                  darkTheme
+                    ? "vs-dark"
+                    : "vs"
+                }
+                path="file:///json-minify/input.json"
+                value={
+                  editorData
+                }
+                onChange={(
+                  value
+                ) => {
+                  setEditorData(
+                    value || ""
+                  );
                 }}
-                language={inputLanguage}
-                onChange={(data) => {
-                  setEditorData(data || "");
-                }}
+                language="json"
                 options={{
-                  minimap: { enabled: false },
+                  minimap: {
+                    enabled: false,
+                  },
                   overviewRulerLanes: 0,
                   wordWrap: "on",
                   fontSize: `${fontSize}px`,
@@ -831,29 +962,46 @@ function App() {
                     handleMouseWheel: true,
                     alwaysConsumeMouseWheel: true,
                   },
-                  renderLineHighlight: "none",
+                  renderLineHighlight:
+                    "none",
                   isWholeLine: true,
                 }}
               />
             </div>
-            <div>
+
+            {/* MINIFIED JSON OUTPUT */}
+
+            <div
+              style={{
+                position:
+                  "relative",
+              }}
+            >
               <Editor
-                // height={`calc(100vh - ${
-                //   containerViewMode === "H"
-                //     ? headerContainerHeight
-                //     : footerContainerHeight
-                // }px)`}
                 height={`calc(100vh - ${
-                  headerContainerHeight+footerContainerHeight-20
+                  headerContainerHeight +
+                  footerContainerHeight -
+                  20
                 }px)`}
                 width="100%"
-                theme="vs-dark"
-                path="file:///json-beautifier/result.json"
-                value={resultData || ""}
-                onMount={onMountResultEditor}
+                theme={
+                  darkTheme
+                    ? "vs-dark"
+                    : "vs"
+                }
+                path="file:///json-minify/result.json"
+                value={
+                  resultData || ""
+                }
+                onMount={
+                  onMountResultEditor
+                }
                 language="json"
                 options={{
-                  minimap: { enabled: false },
+                  readOnly: false,
+                  minimap: {
+                    enabled: false,
+                  },
                   overviewRulerLanes: 0,
                   wordWrap: "on",
                   fontSize: `${fontSize}px`,
@@ -861,211 +1009,530 @@ function App() {
                     handleMouseWheel: true,
                     alwaysConsumeMouseWheel: true,
                   },
-                  renderLineHighlight: "none",
+                  renderLineHighlight:
+                    "none",
                   isWholeLine: true,
                 }}
               />
+
+              {/* ERROR */}
+
+              {error && (
+                <div
+                  style={{
+                    position:
+                      "absolute",
+                    left: "12px",
+                    right: "12px",
+                    bottom: "12px",
+                    padding:
+                      "10px 12px",
+                    background:
+                      "#fee2e2",
+                    color:
+                      "#991b1b",
+                    border:
+                      "1px solid #fecaca",
+                    borderRadius:
+                      "6px",
+                    fontSize:
+                      "13px",
+                    zIndex: 5,
+                  }}
+                >
+                  {error}
+                </div>
+              )}
             </div>
           </SplitPane>
         </TopContainer>
 
+        {/* TOOLBAR */}
+
         <BottomContainer>
-  {/* TOOLBAR */}
-  <div className="footer-toolbar">
-
-    {/* LEFT SIDE */}
-    <div className="footer-left">
-
-      {!sId && (
-        <>
-          {/* Paste */}
-          <FooterButton
-            type="button"
-            onClick={onClickPaste}
-            title="Paste"
-          >
-            <MdOutlineContentPaste />
-            Paste
-          </FooterButton>
-
-          {/* Clear */}
-          <FooterButton
-            type="button"
-            onClick={clear}
-            title="Clear"
-          >
-            <AiOutlineDelete />
-            Clear
-          </FooterButton>
-
-          {/* History */}
-          <FooterButton
-            type="button"
-            onClick={() => {
-              // keep your existing history functionality here
+          <div
+            style={{
+              display: "flex",
+              position:
+                "relative",
+              height: `calc(100vh - ${footerContainerHeight}px)`,
+              borderTop:
+                "1px solid darkgrey",
             }}
-            title="History"
           >
-            <MdHistory />
-            History
-          </FooterButton>
-        </>
-      )}
+            <div
+              style={{
+                display:
+                  "flex",
+                flexDirection:
+                  "column",
+                backgroundColor:
+                  "#f1f5f9",
+                width: "100%",
+              }}
+            >
+              <ToolBar>
+                {/* PASTE */}
 
-      {/* Download */}
-      <FooterButton
-        type="button"
-        onClick={() => {
-          download(
-            "result.txt",
-            tempEditorData || editorData
-          );
-        }}
-        disabled={!editorData && !tempEditorData}
-        title="Download"
-      >
-        <IoMdDownload />
-        Download
-      </FooterButton>
+                <ToolBtn
+                  onClick={
+                    onClickPaste
+                  }
+                >
+                  <MdOutlineContentPaste />
+                  Paste
+                </ToolBtn>
 
-      {/* Paste Result */}
-      <FooterButton
-        type="button"
-        onClick={() => {
-          if (resultData) {
-            setEditorData(resultData);
-            setNewData(resultData);
-          }
-        }}
-        disabled={!resultData}
-        title="Paste Result"
-      >
-        <LuMoveHorizontal />
-        Paste Result
-      </FooterButton>
-    </div>
+                {/* UPLOAD */}
 
-    {/* RIGHT SIDE */}
-    <div className="footer-right">
+                <label
+                  style={{
+                    display:
+                      "inline-flex",
+                  }}
+                >
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={
+                      handleFileUpload
+                    }
+                    style={{
+                      display:
+                        "none",
+                    }}
+                  />
 
-      {/* Download Result */}
-      <FooterButton
-        type="button"
-        onClick={() => {
-          download(
-            "result.txt",
-            resultData
-          );
-        }}
-        disabled={!resultData}
-        title="Download Result"
-      >
-        <IoMdDownload />
-        Download Result
-      </FooterButton>
+                  <ToolBtn
+                    as="span"
+                    style={{
+                      cursor:
+                        "pointer",
+                    }}
+                  >
+                    <IoMdDownload
+                      style={{
+                        transform:
+                          "rotate(180deg)",
+                      }}
+                    />
+                    Upload JSON
+                  </ToolBtn>
+                </label>
 
-      {/* Copy */}
-      <CopyToClipboard
-        text={resultData || ""}
-        onCopy={() => {
-          setCopyResButtonTitle("Copied");
-        }}
-      >
-        <FooterButton
-          type="button"
-          disabled={!resultData}
-          title="Copy"
-        >
-          <IoCopyOutline />
-          {copyResButtonTitle}
-        </FooterButton>
-      </CopyToClipboard>
+                {/* CLEAR */}
 
-      <div className="footer-divider" />
+                <ToolBtn
+                  onClick={clear}
+                >
+                  <AiOutlineDelete />
+                  Clear
+                </ToolBtn>
 
-      {/* Search */}
-      <FooterButton
-        type="button"
-        onClick={findWord}
-        title="Search"
-      >
-        <IoSearch />
-        Search
-      </FooterButton>
-    </div>
-  </div>
+                {/* HISTORY */}
 
-  {/* FOOTER NAVIGATION */}
-  {!sId && (
-    <div className="footer-nav">
-      {HOME_NAV_LINKS.map(({ href, label }) => (
-        <Link
-          key={href}
-          href={href}
-          className="menu-item"
-        >
-          {label}
-        </Link>
-      ))}
-    </div>
-  )}
-</BottomContainer>
+                <ToolBtn
+                  onClick={() =>
+                    setIsHistoryOpen(
+                      true
+                    )
+                  }
+                >
+                  <MdHistory />
+                  History
+                </ToolBtn>
 
-        {/* {containerViewMode === "H" && (
-          <div style={{ height: "20px", backgroundColor: "#505050" }}></div>
-        )} */}
-        {!sId && (
-          <HomeSeoSection>
-            <div className="content">
-              <h2>Online JSON minifier, formatter, viewer, and validator</h2>
-              <p>
-                JSON Minifier helps you compress JSON, inspect nested objects,
-                and clean up API payloads in a browser-based split editor. Paste
-                readable JSON on the left and review compact output on the
-                right.
-              </p>
-              <p>
-                The tool is useful for reducing API payload size, checking JSON
-                structure before storing data, and turning readable payloads
-                into compact text during development.
-              </p>
-              <div className="link-row">
-                {HOME_NAV_LINKS.map(({ href, label }) => (
-                  <Link href={href} key={href}>
+                {/* DOWNLOAD */}
+
+                <ToolBtn
+                  onClick={() =>
+                    download(
+                      "minified.json",
+                      resultData
+                    )
+                  }
+                  disabled={
+                    !resultData
+                  }
+                >
+                  <IoMdDownload />
+                  Download
+                </ToolBtn>
+
+                {/* PASTE RESULT */}
+
+                <ToolBtn
+                  onClick={() => {
+                    if (
+                      resultData
+                    ) {
+                      setEditorData(
+                        resultData
+                      );
+                    }
+                  }}
+                  disabled={
+                    !resultData
+                  }
+                >
+                  <LuMoveHorizontal />
+                  Paste Result
+                </ToolBtn>
+
+                <ToolRight>
+                  {/* DOWNLOAD RESULT */}
+
+                  <ToolBtn
+                    onClick={() =>
+                      download(
+                        "minified.json",
+                        resultData
+                      )
+                    }
+                    disabled={
+                      !resultData
+                    }
+                  >
+                    <IoMdDownload />
+                    Download Result
+                  </ToolBtn>
+
+                  {/* COPY */}
+
+                  <CopyToClipboard
+                    text={
+                      resultData ||
+                      ""
+                    }
+                    onCopy={() =>
+                      setCopyResButtonTitle(
+                        "Copied"
+                      )
+                    }
+                  >
+                    <ToolBtn
+                      disabled={
+                        !resultData
+                      }
+                    >
+                      <IoCopyOutline />
+                      {
+                        copyResButtonTitle
+                      }
+                    </ToolBtn>
+                  </CopyToClipboard>
+
+                  <ToolDivider />
+
+                  {/* SEARCH */}
+
+                  <ToolBtn
+                    onClick={
+                      findWord
+                    }
+                  >
+                    <IoSearch />
+                    Search
+                  </ToolBtn>
+                </ToolRight>
+              </ToolBar>
+            </div>
+          </div>
+
+          {/* FOOTER NAV */}
+
+          <div className="menu-container">
+            <div
+              style={{
+                position:
+                  "absolute",
+                right: "10px",
+                bottom: "2px",
+                display:
+                  "flex",
+                fontSize:
+                  "10px",
+              }}
+            >
+              {HOME_NAV_LINKS.map(
+                ({
+                  href,
+                  label,
+                }) => (
+                  <Link
+                    className="menu-item"
+                    href={
+                      href
+                    }
+                    key={
+                      href
+                    }
+                  >
                     {label}
                   </Link>
-                ))}
-              </div>
-
-              <h3>Why developers use JSON Minifier</h3>
-              <ul>
-                <li>Minify raw JSON into a compact structure.</li>
-                <li>Inspect nested arrays and objects side by side.</li>
-                <li>
-                  Copy, paste, search, download, and adjust editor font size.
-                </li>
-                <li>Work with compact JSON directly in the browser.</li>
-              </ul>
-
-              <h3>Common questions</h3>
-              <h4>What does JSON Minifier do?</h4>
-              <p>
-                JSON Minifier converts raw JSON into compact output and lets you
-                inspect it in a split-view editor.
-              </p>
-              <h4>Can I validate JSON before using it in an API or app?</h4>
-              <p>
-                Yes. Invalid JSON fails to parse, which makes malformed payloads
-                easier to catch before you use them elsewhere.
-              </p>
-              <h4>Is JSON Minifier free to use?</h4>
-              <p>
-                Yes. JSON Minifier is a free online JSON formatter, minifier,
-                validator, and viewer.
-              </p>
+                )
+              )}
             </div>
-          </HomeSeoSection>
+          </div>
+        </BottomContainer>
+
+        {/* HISTORY */}
+
+        {isHistoryOpen && (
+          <HistoryOverlay
+            role="presentation"
+            onClick={() =>
+              setIsHistoryOpen(
+                false
+              )
+            }
+          >
+            <HistoryModal
+              role="dialog"
+              aria-modal="true"
+              onClick={(
+                event
+              ) =>
+                event.stopPropagation()
+              }
+            >
+              <HistoryModalHeader>
+                <h2>
+                  JSON Minification History
+                </h2>
+
+                <button
+                  type="button"
+                  aria-label="Close history"
+                  onClick={() =>
+                    setIsHistoryOpen(
+                      false
+                    )
+                  }
+                >
+                  <IoMdClose />
+                </button>
+              </HistoryModalHeader>
+
+              <HistoryCards>
+                {history.length ===
+                  0 && (
+                  <div
+                    style={{
+                      color:
+                        "#94a3b8",
+                    }}
+                  >
+                    No saved history
+                  </div>
+                )}
+
+                {history.map(
+                  (
+                    item
+                  ) => (
+                    <HistoryCard
+                      key={
+                        item.id
+                      }
+                    >
+                      <div
+                        className="card-content"
+                        title={
+                          item.input
+                        }
+                        onClick={() =>
+                          restoreHistory(
+                            item
+                          )
+                        }
+                      >
+                        <span className="timestamp">
+                          {
+                            item.time
+                          }
+                        </span>
+
+                        <span className="preview">
+                          Input:{" "}
+                          {item.input.substring(
+                            0,
+                            150
+                          )}
+                        </span>
+
+                        <span className="preview">
+                          Minified:{" "}
+                          {item.output.substring(
+                            0,
+                            300
+                          )}
+                        </span>
+                      </div>
+
+                      <button
+                        className="card-delete"
+                        type="button"
+                        onClick={() =>
+                          deleteHistory(
+                            item.id
+                          )
+                        }
+                      >
+                        Delete
+                      </button>
+                    </HistoryCard>
+                  )
+                )}
+              </HistoryCards>
+            </HistoryModal>
+          </HistoryOverlay>
         )}
+
+        {/* SEO CONTENT */}
+
+        <HomeSeoSection>
+          <div className="content">
+            <h2>
+              Free Online JSON Minifier
+            </h2>
+
+            <p>
+              JSON Minifier is a free online tool
+              that removes unnecessary whitespace,
+              line breaks, and indentation from JSON
+              data to create a smaller JSON string.
+            </p>
+
+            <p>
+              Paste JSON into the input editor or
+              upload a JSON file to instantly
+              minify your JSON and reduce its size
+              while keeping the data unchanged.
+            </p>
+
+            <div className="link-row">
+              {HOME_NAV_LINKS.map(
+                ({
+                  href,
+                  label,
+                }) => (
+                  <Link
+                    href={href}
+                    key={href}
+                  >
+                    {label}
+                  </Link>
+                )
+              )}
+            </div>
+
+            <h3>
+              Why use this JSON Minifier?
+            </h3>
+
+            <ul>
+              <li>
+                Minify JSON instantly in your
+                browser.
+              </li>
+
+              <li>
+                Remove unnecessary spaces,
+                indentation, and line breaks.
+              </li>
+
+              <li>
+                Validate JSON syntax before
+                minifying.
+              </li>
+
+              <li>
+                Upload JSON files directly from
+                your computer.
+              </li>
+
+              <li>
+                Reduce JSON size for APIs and
+                web applications.
+              </li>
+
+              <li>
+                Copy or download the minified
+                JSON.
+              </li>
+
+              <li>
+                Process JSON directly in your
+                browser.
+              </li>
+
+              <li>
+                No server-side processing is
+                required.
+              </li>
+            </ul>
+
+            <h3>
+              Common Questions
+            </h3>
+
+            <h4>
+              What is JSON minification?
+            </h4>
+
+            <p>
+              JSON minification removes unnecessary
+              whitespace, indentation, and line
+              breaks from JSON while preserving its
+              data and structure. Minified JSON is
+              useful when reducing the size of data
+              sent over a network.
+            </p>
+
+            <h4>
+              How do I minify JSON?
+            </h4>
+
+            <p>
+              Paste your JSON into the input editor
+              or upload a JSON file. The converter
+              automatically validates the JSON and
+              generates a compact minified version.
+            </p>
+
+            <h4>
+              Does JSON minification change my data?
+            </h4>
+
+            <p>
+              No. Valid JSON is parsed and serialized
+              without indentation or unnecessary
+              whitespace. The JSON data and structure
+              remain the same.
+            </p>
+
+            <h4>
+              Why should I minify JSON?
+            </h4>
+
+            <p>
+              Minifying JSON can reduce its file size
+              and make data more efficient to transfer
+              between servers, APIs, and applications.
+            </p>
+
+            <h4>
+              Is this JSON Minifier free?
+            </h4>
+
+            <p>
+              Yes. This JSON Minifier is free to use
+              online and processes your JSON directly
+              in your browser.
+            </p>
+          </div>
+        </HomeSeoSection>
       </main>
     </>
   );

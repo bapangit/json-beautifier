@@ -1,181 +1,39 @@
-
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { css, styled } from "styled-components";
+import { useEffect, useState } from "react";
+import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
-import Button from "../../Components/Buttons/Button";
-import {
-  TrimValueState,
-  getContainerMode,
-  getMode,
-  getTimeDiff,
-  saveContainerMode,
-  saveHistory,
-  setMode,
-} from "../../utils";
-import { useParams } from "next/navigation";
-
 import Switch from "react-switch";
 import CopyToClipboard from "react-copy-to-clipboard";
 import { IoMdClose, IoMdMoon, IoMdDownload } from "react-icons/io";
-import SavedTabData from "../../Components/CustomStates/SavedTabData";
-import { HOME_JSON_LD } from "../seo";
-import Link from "next/link";
-import { MdOutlineContentPaste } from "react-icons/md";
+import {
+  MdHistory,
+  MdOutlineContentPaste,
+} from "react-icons/md";
 import { AiOutlineDelete } from "react-icons/ai";
 import { IoSearch, IoCopyOutline } from "react-icons/io5";
 import { LuMoveHorizontal } from "react-icons/lu";
-import Menu from "../../Components/Menu";
-import { useBookmarkStatus } from "@/Components/CustomStates/CheckBookmark";
-
-const XML_TO_JSON_SCHEMA = {
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "XML to JSON Converter",
-  applicationCategory: "DeveloperApplication",
-  operatingSystem: "Any",
-  browserRequirements: "Requires modern web browser",
-  description:
-    "Free online XML to JSON converter that transforms XML data into formatted JSON with a split editor and instant conversion results.",
-  url: "https://www.json-beautifier.net/xml-to-json",
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
-  },
-  featureList: [
-    "Convert XML to JSON",
-    "Paste XML and generate JSON instantly",
-    "Copy and download converted JSON",
-    "Validate and inspect converted output",
-    "Works in any browser",
-  ],
-};
+import Link from "next/link";
+import Menu from "@/Components/Menu";
+import Button from "@/Components/Buttons/Button";
 
 const headerContainerHeight = 70;
-const footerContainerHeight = 110;
+const footerContainerHeight = 80;
 
 const HOME_NAV_LINKS = [
   { href: "/", label: "Home" },
+  { href: "/blog", label: "Blog" },
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact" },
   { href: "/privacy-policy", label: "Privacy Policy" },
 ];
 
-const useBrowserLayoutEffect =
-  typeof window === "undefined" ? useEffect : useLayoutEffect;
-
-/* ---------- XML -> JSON helpers ---------- */
-
-const xmlElementToObject = (element) => {
-  const result = {};
-
-  // Add XML attributes
-  if (element.attributes && element.attributes.length > 0) {
-    Array.from(element.attributes).forEach((attribute) => {
-      result[`@${attribute.name}`] = attribute.value;
-    });
-  }
-
-  const childElements = Array.from(element.children);
-
-  // Get direct text nodes only
-  const textContent = Array.from(element.childNodes)
-    .filter((node) => node.nodeType === Node.TEXT_NODE)
-    .map((node) => node.nodeValue.trim())
-    .filter(Boolean)
-    .join(" ");
-
-  // Element has no child elements
-  if (childElements.length === 0) {
-    // No attributes, return text directly
-    if (Object.keys(result).length === 0) {
-      return textContent;
-    }
-
-    // Attributes + text content
-    if (textContent) {
-      result["#text"] = textContent;
-    }
-
-    return result;
-  }
-
-  // Group child elements by tag name
-  childElements.forEach((child) => {
-    const childName = child.tagName;
-    const childValue = xmlElementToObject(child);
-
-    if (Object.prototype.hasOwnProperty.call(result, childName)) {
-      if (!Array.isArray(result[childName])) {
-        result[childName] = [result[childName]];
-      }
-
-      result[childName].push(childValue);
-    } else {
-      result[childName] = childValue;
-    }
-  });
-
-  // Preserve mixed text content
-  if (textContent) {
-    result["#text"] = textContent;
-  }
-
-  return result;
-};
-
-const formatJsonData = (data) => {
-  const parser = new DOMParser();
-  const xmlDocument = parser.parseFromString(data, "application/xml");
-
-  const parserError =
-    xmlDocument.querySelector("parsererror") ||
-    xmlDocument.getElementsByTagName("parsererror")[0];
-
-  if (parserError) {
-    throw new Error("Invalid XML");
-  }
-
-  const root = xmlDocument.documentElement;
-
-  if (!root || root.nodeName === "parsererror") {
-    throw new Error("Invalid XML");
-  }
-
-  const result = {
-    [root.tagName]: xmlElementToObject(root),
-  };
-
-  return JSON.stringify(result, null, 2);
-};
-
-const trimEditorData = (data, trimValue) => {
-  const trimmedData = data?.trim() || "";
-
-  if (
-    trimValue &&
-    trimmedData.substring(
-      trimmedData.length - trimValue.length,
-      trimmedData.length,
-    ) === trimValue
-  ) {
-    return trimmedData.substring(
-      0,
-      trimmedData.length - trimValue.length,
-    );
-  }
-
-  return trimmedData;
-};
-
 const HeaderContainer = styled.div`
   width: 100%;
   height: 50px;
   padding: 0px 15px;
-  display: ${(p) => (p.$show || true ? "flex" : "none")};
+  display: flex;
   justify-content: space-between;
   gap: 20px;
   align-items: center;
@@ -199,28 +57,12 @@ const HeaderContainer = styled.div`
     white-space: nowrap;
   }
 
-  .bookmark-message {
-    flex: 1;
-    min-width: 180px;
-    text-align: center;
-    font-size: 15px;
-    font-weight: 500;
-  }
-
-  .menu-toggle {
-    cursor: pointer;
-  }
-
   @media (max-width: 760px) {
     gap: 10px;
     padding: 0px 10px;
 
     .brand-title {
       font-size: 20px;
-    }
-
-    .bookmark-message {
-      display: none;
     }
   }
 
@@ -302,34 +144,23 @@ const HomeSeoSection = styled.section`
 
 const TopContainer = styled.div`
   width: 100%;
-
-  ${(p) => {
-    return p.mode === "H"
-      ? css`
-          height: calc(
-            100vh - ${headerContainerHeight + footerContainerHeight - 20}px
-          );
-        `
-      : css`
-          height: calc(
-            100vh - ${footerContainerHeight + headerContainerHeight - 20}px
-          );
-        `;
-  }}
+  height: calc(
+    100vh - ${headerContainerHeight + footerContainerHeight - 20}px
+  );
 `;
 
 const BottomContainer = styled.div`
   width: 100%;
   height: ${footerContainerHeight}px;
-  display: ${(p) => (p.$show || true ? "flex" : "none")};
+  display: flex;
   flex-direction: column;
-  background-color: #0f2630;
+  background-color: #f1f5f9;
   z-index: 100;
 
   .menu-container {
     position: relative;
     height: 14px;
-    color: white;
+    color: #12343b;
   }
 
   .menu-item {
@@ -338,362 +169,624 @@ const BottomContainer = styled.div`
     height: 15px;
     padding: 0px 4px;
     cursor: pointer;
-    color: white;
+    color: #12343b;
     text-decoration: none;
 
     &:hover {
       text-decoration: underline;
     }
   }
+`;
 
-  input {
-    width: 40px;
-    margin-left: 2px;
-    border: none;
-    background-color: lightblue;
-    font-size: large;
-    padding: 0px 4px;
+const ToolBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  flex-wrap: wrap;
+`;
 
-    &:focus {
-      outline: none;
-    }
+const ToolBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid ${(p) =>
+    p.$primary ? "#0f9d78" : "#e2e8f0"};
+  background: ${(p) =>
+    p.$primary ? "#0f9d78" : "#ffffff"};
+  color: ${(p) =>
+    p.$primary ? "#ffffff" : "#334155"};
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: ${(p) =>
+      p.$primary ? "#0c8a67" : "#f1f5f9"};
+    border-color: ${(p) =>
+      p.$primary ? "#0c8a67" : "#cbd5e1"};
   }
 
-  .saved-tab {
-    border: 1px solid grey;
-    border-radius: 4px;
-    margin: 0px 5px;
-    color: lightgray;
-    display: flex;
-    justify-content: space-between;
-    gap: 5px;
-    align-items: center;
-    padding: 2px 7px;
-    font-size: 12px;
-    white-space: nowrap;
-
-    :active {
-      color: #963d32;
-    }
-
-    &:hover {
-      border-color: #963d32;
-      background-color: #8b4238;
-    }
+  &:active {
+    transform: scale(0.97);
   }
 
-  .icon {
-    display: flex;
-    align-items: center;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  svg {
+    font-size: 16px;
+  }
+`;
+
+const ToolDivider = styled.div`
+  width: 1px;
+  height: 22px;
+  background: #e2e8f0;
+  margin: 0 4px;
+`;
+
+const ToolRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+
+  @media (max-width: 700px) {
+    margin-left: 0;
+  }
+`;
+
+const HistoryOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 38, 48, 0.6);
+`;
+
+const HistoryModal = styled.div`
+  width: min(760px, 100%);
+  max-height: min(620px, 90vh);
+  overflow: hidden;
+  border: 1px solid #adddd7;
+  border-radius: 12px;
+  background: #f8fbfb;
+  box-shadow: 0 14px 40px rgba(15, 38, 48, 0.3);
+`;
+
+const HistoryModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #dbe5e9;
+  color: #12343b;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  button {
+    border: 0;
+    background: transparent;
+    color: #12343b;
+    font-size: 24px;
     cursor: pointer;
-    border: 1px solid grey;
+  }
+`;
 
-    :hover {
-      color: red;
-    }
+const HistoryCards = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 20px;
+`;
+
+const HistoryCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 260px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dbe5e9;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(36, 55, 70, 0.08);
+
+  .card-content {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    padding: 14px;
+    cursor: pointer;
+  }
+
+  .timestamp {
+    display: block;
+    overflow: hidden;
+    color: #12343b;
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .preview {
+    display: block;
+    overflow: hidden;
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.45;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 6;
+  }
+
+  .card-delete {
+    flex-shrink: 0;
+    width: 100%;
+    padding: 8px 12px;
+    border: 0;
+    border-top: 1px solid #dbe5e9;
+    background: #f8fbfb;
+    color: #963d32;
+    cursor: pointer;
   }
 `;
 
 function App() {
-  const { sId } = useParams();
-const [isBookmarked, bookmark] = useBookmarkStatus();
-  const { tabData, save, getTabData, deleteTab } = SavedTabData();
-
   const [editorData, setEditorData] = useState("");
-
-  /* Timestamp */
-
-  const [timestampHovered, setTimestampHovered] = useState();
-
-  const tempEditorData = useMemo(() => {
-    if (timestampHovered) {
-      return getTabData(timestampHovered);
-    }
-
-    return "";
-  }, [timestampHovered, getTabData]);
-
   const [resultData, setResultData] = useState("");
-
-  const [editor, setEditor] = useState();
-  const [monaco, setMonaco] = useState();
-
-  const [trimValue, setTrimValue] = TrimValueState();
-  const [findValue, setFindValue] = useState("");
-
-  const [containerViewMode, setContainerViewMode] = useState("B");
-  const [isContainerViewModeReady, setIsContainerViewModeReady] =
-    useState(false);
-
+  const [error, setError] = useState("");
   const [darkTheme, setDarkTheme] = useState(false);
+  const [fontSize, setFontSize] = useState(14);
 
-  useBrowserLayoutEffect(() => {
-    setEditorData("");
-    setResultData("");
+  const [history, setHistory] = useState([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-    const savedContainerMode = getContainerMode();
+  const [editor, setEditor] = useState(null);
+  const [monaco, setMonaco] = useState(null);
 
-    setContainerViewMode(savedContainerMode === "B" ? "B" : "H");
-    setDarkTheme(getMode());
-    setIsContainerViewModeReady(true);
-  }, [sId]);
+  const [copyResButtonTitle, setCopyResButtonTitle] =
+    useState("Copy");
 
-  const updateContainerMode = (mode) => {
-    setContainerViewMode(mode);
-    saveContainerMode(mode);
-  };
+  /*
+   * Convert an XML DOM node into a JSON-compatible object.
+   */
+  const xmlNodeToJson = (node) => {
+    const obj = {};
 
-  useEffect(() => {
-    if (!editor) {
-      return;
+    // Attributes
+    if (node.attributes && node.attributes.length > 0) {
+      const attributes = {};
+
+      for (let i = 0; i < node.attributes.length; i++) {
+        const attribute = node.attributes[i];
+
+        attributes[attribute.name] = attribute.value;
+      }
+
+      obj["@attributes"] = attributes;
     }
 
-    const handler = () => {
-      setTimeout(() => {
-        editor.getAction("actions.find").run();
-      }, 500);
-    };
+    const childElements = [];
+    let textContent = "";
 
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [findValue, editor]);
+    for (let i = 0; i < node.childNodes.length; i++) {
+      const child = node.childNodes[i];
 
-  const [isPasting, setIsPasting] = useState(false);
+      if (child.nodeType === Node.ELEMENT_NODE) {
+        childElements.push(child);
+      } else if (
+        child.nodeType === Node.TEXT_NODE ||
+        child.nodeType === Node.CDATA_SECTION_NODE
+      ) {
+        const text = child.nodeValue?.trim();
 
-  const onMountResultEditor = (editorInstance, monacoInstance) => {
-    editorInstance.onKeyDown((event) => {
-      const { keyCode, ctrlKey, metaKey } = event;
+        if (text) {
+          textContent += text;
+        }
+      }
+    }
 
-      if (keyCode === 52 && (metaKey || ctrlKey)) {
-        event.preventDefault();
+    // No child elements
+    if (childElements.length === 0) {
+      if (Object.keys(obj).length > 0) {
+        if (textContent) {
+          obj["#text"] = textContent;
+        }
+
+        return obj;
+      }
+
+      return textContent;
+    }
+
+    // Group repeated elements
+    childElements.forEach((child) => {
+      const name = child.nodeName;
+      const value = xmlNodeToJson(child);
+
+      if (Object.prototype.hasOwnProperty.call(obj, name)) {
+        if (!Array.isArray(obj[name])) {
+          obj[name] = [obj[name]];
+        }
+
+        obj[name].push(value);
+      } else {
+        obj[name] = value;
       }
     });
 
-    monacoInstance.editor.defineTheme("myThemeDark", {
-      base: "vs-dark",
-      inherit: true,
-      rules: [],
-      colors: {},
-    });
+    if (textContent) {
+      obj["#text"] = textContent;
+    }
 
-    monacoInstance.editor.defineTheme("myThemeLight", {
-      base: "vs",
-      inherit: true,
-      rules: [],
-      colors: {},
-    });
-
-    const mode = getMode();
-
-    monacoInstance.editor.setTheme(
-      mode ? "myThemeDark" : "myThemeLight",
-    );
-
-    setEditor(editorInstance);
-    setMonaco(monacoInstance);
+    return obj;
   };
 
-  useEffect(() => {
-    if (!editor) {
+  /*
+   * Convert XML string into formatted JSON.
+   */
+  const convertXmlToJson = (xmlString) => {
+    if (!xmlString || !xmlString.trim()) {
+      setResultData("");
+      setError("");
       return;
     }
 
-    const output = resultData || "";
+    try {
+      setError("");
 
-    if (editor.getValue() !== output) {
-      editor.setValue(output);
-    }
+      if (typeof DOMParser === "undefined") {
+        throw new Error(
+          "XML parsing is not supported by this browser."
+        );
+      }
 
-    editor.layout();
-  }, [editor, resultData]);
+      const parser = new DOMParser();
 
-  const setTheme = (isDark) => {
-    if (monaco) {
-      monaco.editor.setTheme(
-        isDark ? "myThemeDark" : "myThemeLight",
+      const xmlDocument = parser.parseFromString(
+        xmlString,
+        "application/xml"
+      );
+
+      const parserError =
+        xmlDocument.querySelector("parsererror");
+
+      if (parserError) {
+        throw new Error(
+          parserError.textContent ||
+            "Invalid XML. Please check your XML syntax."
+        );
+      }
+
+      const root = xmlDocument.documentElement;
+
+      if (!root) {
+        throw new Error(
+          "No XML root element was found."
+        );
+      }
+
+      const jsonObject = {
+        [root.nodeName]: xmlNodeToJson(root),
+      };
+
+      const formattedJson = JSON.stringify(
+        jsonObject,
+        null,
+        2
+      );
+
+      setResultData(formattedJson);
+
+      saveToHistory(xmlString, formattedJson);
+    } catch (err) {
+      setResultData("");
+
+      setError(
+        err?.message ||
+          "Unable to convert XML to JSON."
       );
     }
-
-    setDarkTheme(isDark);
-    setMode(isDark);
   };
 
-  const convertOnChange = (data) => {
+  /*
+   * Save history locally.
+   */
+  const saveToHistory = (input, output) => {
+    if (!input || !output) return;
+
+    const item = {
+      id: Date.now(),
+      input,
+      output,
+      time: new Date().toLocaleString(),
+    };
+
+    setHistory((previous) => {
+      const updated = [item, ...previous].slice(0, 20);
+
+      try {
+        localStorage.setItem(
+          "xml-to-json-history",
+          JSON.stringify(updated)
+        );
+      } catch {}
+
+      return updated;
+    });
+  };
+
+  /*
+   * Load history.
+   */
+  useEffect(() => {
     try {
-      setResultData(formatJsonData(data));
-    } catch {
-      setResultData("");
-    }
-  };
+      const saved = localStorage.getItem(
+        "xml-to-json-history"
+      );
 
+      if (saved) {
+        setHistory(JSON.parse(saved));
+      }
+    } catch {}
+  }, []);
+
+  /*
+   * Paste XML from clipboard.
+   */
   const onClickPaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
 
       if (text) {
         setEditorData(text);
-        setNewData(text);
+        convertXmlToJson(text);
       }
     } catch {
-      // Clipboard access failed
+      setError("Unable to read clipboard.");
     }
   };
 
-  const [newData, setNewData] = useState("");
+  /*
+   * Upload XML file.
+   */
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
 
-  useEffect(() => {
-    if (!newData) {
-      return;
-    }
+    if (!file) return;
 
-    const handler = setTimeout(() => {
-      const tabArr = Object.keys(tabData);
+    try {
+      setError("");
 
-      if (tabArr.length) {
-        if (getTabData(tabArr[0]) !== newData) {
-          save(newData);
-        }
-      } else {
-        save(newData);
+      const text = await file.text();
+
+      if (!text.trim()) {
+        throw new Error(
+          "The selected XML file is empty."
+        );
       }
-    }, 2000);
 
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [newData, tabData, getTabData, save]);
+      setEditorData(text);
+      convertXmlToJson(text);
+    } catch (err) {
+      setResultData("");
 
-  const findWord = () => {
-    if (editor) {
-      editor.getAction("actions.find").run();
+      setError(
+        err?.message ||
+          "Unable to read the selected XML file."
+      );
     }
+
+    event.target.value = "";
   };
 
-  const trim = () => {
-    return trimEditorData(editorData, trimValue);
-  };
-
-  useEffect(() => {
-    if (isContainerViewModeReady && !sId) {
-      saveHistory(editorData);
-    }
-  }, [editorData, isContainerViewModeReady, sId]);
-
-  useEffect(() => {
-    if (!isContainerViewModeReady) {
-      return;
-    }
-
-    const handler = setTimeout(() => {
-      convertOnChange(trim());
-
-      if (editorData && isPasting) {
-        setNewData(editorData);
-        setIsPasting(false);
-      }
-    }, 500);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [editorData, isContainerViewModeReady]);
-
-  const onClickTrim = () => {
-    convertOnChange(trim());
-  };
-
-  useEffect(() => {
-    if (!isContainerViewModeReady) {
-      return;
-    }
-
-    const handler = setTimeout(() => {
-      onClickTrim();
-    }, 500);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [trimValue, isContainerViewModeReady]);
-
+  /*
+   * Clear input/output.
+   */
   const clear = () => {
     setEditorData("");
     setResultData("");
+    setError("");
   };
 
-  const [copyResButtonTitle, setCopyResButtonTitle] =
-    useState("Copy");
+  /*
+   * Download result.
+   */
+  const download = (filename, text) => {
+    if (!text) return;
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      if (copyResButtonTitle !== "Copy") {
-        setTimeout(() => {
-          setCopyResButtonTitle("Copy");
-        }, 1000);
-      }
-    }, 4000);
+    const blob = new Blob([text], {
+      type: "application/json;charset=utf-8",
+    });
 
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [copyResButtonTitle]);
+    const url = URL.createObjectURL(blob);
 
-  function resetFindToolbarPosition(width) {
-    if (editor) {
-      editor.layout({ width });
-    }
-  }
-
-  function download(filename, text) {
     const element = document.createElement("a");
 
-    element.setAttribute(
-      "href",
-      "data:text/plain;charset=utf-8," +
-        encodeURIComponent(text),
-    );
-
-    element.setAttribute("download", filename);
-
-    element.style.display = "none";
+    element.href = url;
+    element.download = filename;
 
     document.body.appendChild(element);
 
     element.click();
 
     document.body.removeChild(element);
-  }
 
-  const [fontSize, setFontSize] = useState(14);
+    URL.revokeObjectURL(url);
+  };
+
+  /*
+   * Copy button status.
+   */
+  useEffect(() => {
+    if (copyResButtonTitle === "Copy") return;
+
+    const timer = setTimeout(() => {
+      setCopyResButtonTitle("Copy");
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [copyResButtonTitle]);
+
+  /*
+   * Automatically convert XML when input changes.
+   */
+  useEffect(() => {
+    if (!editorData.trim()) {
+      setResultData("");
+      setError("");
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      convertXmlToJson(editorData);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [editorData]);
+
+  /*
+   * Theme.
+   */
+  const setTheme = (isDark) => {
+    if (monaco) {
+      monaco.editor.setTheme(
+        isDark ? "myThemeDark" : "myThemeLight"
+      );
+    }
+
+    setDarkTheme(isDark);
+
+    try {
+      localStorage.setItem(
+        "xml-json-theme",
+        isDark ? "dark" : "light"
+      );
+    } catch {}
+  };
+
+  /*
+   * Load theme.
+   */
+  useEffect(() => {
+    try {
+      const theme = localStorage.getItem(
+        "xml-json-theme"
+      );
+
+      if (theme === "dark") {
+        setDarkTheme(true);
+      }
+    } catch {}
+  }, []);
+
+  /*
+   * Monaco mount.
+   */
+  const onMountResultEditor = (
+    editorInstance,
+    monacoInstance
+  ) => {
+    monacoInstance.editor.defineTheme(
+      "myThemeDark",
+      {
+        base: "vs-dark",
+        inherit: true,
+        rules: [],
+        colors: {},
+      }
+    );
+
+    monacoInstance.editor.defineTheme(
+      "myThemeLight",
+      {
+        base: "vs",
+        inherit: true,
+        rules: [],
+        colors: {},
+      }
+    );
+
+    monacoInstance.editor.setTheme(
+      darkTheme
+        ? "myThemeDark"
+        : "myThemeLight"
+    );
+
+    setEditor(editorInstance);
+    setMonaco(monacoInstance);
+  };
+
+  /*
+   * Search.
+   */
+  const findWord = () => {
+    if (editor) {
+      editor.getAction("actions.find")?.run();
+    }
+  };
+
+  /*
+   * Restore history.
+   */
+  const restoreHistory = (item) => {
+    setEditorData(item.input);
+    setResultData(item.output);
+    setError("");
+    setIsHistoryOpen(false);
+  };
+
+  /*
+   * Delete history item.
+   */
+  const deleteHistory = (id) => {
+    setHistory((previous) => {
+      const updated = previous.filter(
+        (item) => item.id !== id
+      );
+
+      try {
+        localStorage.setItem(
+          "xml-to-json-history",
+          JSON.stringify(updated)
+        );
+      } catch {}
+
+      return updated;
+    });
+  };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(HOME_JSON_LD),
-        }}
-      />
-
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(XML_TO_JSON_SCHEMA),
-        }}
-      />
-
       <main
         style={{
           minHeight: "100vh",
           width: "100%",
           overflowX: "hidden",
-          visibility: isContainerViewModeReady
-            ? "visible"
-            : "hidden",
         }}
       >
-        <HeaderContainer $show={containerViewMode === "H"}>
+        {/* HEADER */}
+
+        <HeaderContainer>
           <div className="brand-nav">
             <h1 className="brand-title">
               XML to JSON Converter
@@ -701,35 +794,14 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
           </div>
 
           <div
-              style={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "flex-end",
-              }}
-            >
-              {!isBookmarked && (
-                <button
-                  style={{ padding: "2px 8px" }}
-                  onClick={() => {
-                    const isMac = navigator.platform
-                      .toUpperCase()
-                      .includes("MAC");
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            {/* FONT SIZE */}
 
-                    alert(
-                      `To bookmark this page, press ${
-                        isMac ? "⌘ + D" : "Ctrl + D"
-                      }`,
-                    );
-
-                    bookmark();
-                  }}
-                >
-                  ⭐ To visit again, Bookmark this tool
-                </button>
-              )}
-            </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <div
               style={{
                 display: "flex",
@@ -738,10 +810,49 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                 color: "#12343b",
               }}
             >
-              <button type="button" title="Decrease font size" style={{ width: "28px", height: "24px", padding: 0, fontSize: "16px" }} onClick={() => setFontSize(fontSize > 5 ? fontSize - 1 : 5)}>-</button>
+              <button
+                type="button"
+                title="Decrease font size"
+                style={{
+                  width: "28px",
+                  height: "24px",
+                  padding: 0,
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+                onClick={() =>
+                  setFontSize(
+                    fontSize > 5
+                      ? fontSize - 1
+                      : 5
+                  )
+                }
+              >
+                -
+              </button>
+
               <Button title={fontSize} />
-              <button type="button" title="Increase font size" style={{ width: "28px", height: "24px", padding: 0, fontSize: "16px" }} onClick={() => setFontSize(fontSize + 1)}>+</button>
+
+              <button
+                type="button"
+                title="Increase font size"
+                style={{
+                  width: "28px",
+                  height: "24px",
+                  padding: 0,
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+                onClick={() =>
+                  setFontSize(fontSize + 1)
+                }
+              >
+                +
+              </button>
             </div>
+
+            {/* THEME */}
+
             <div
               style={{
                 display: "flex",
@@ -751,9 +862,10 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
               }}
             >
               <div
-                className="tool-row"
                 style={{
-                  color: darkTheme ? "grey" : "#FDB813",
+                  color: darkTheme
+                    ? "grey"
+                    : "#FDB813",
                   fontSize: "22px",
                   cursor: "pointer",
                 }}
@@ -761,7 +873,13 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
               >
                 &#9728;
               </div>
-              <div style={{ margin: "0px 5px", height: "24px" }}>
+
+              <div
+                style={{
+                  margin: "0px 5px",
+                  height: "24px",
+                }}
+              >
                 <Switch
                   checkedIcon={false}
                   uncheckedIcon={false}
@@ -770,17 +888,28 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                   checked={darkTheme}
                 />
               </div>
+
               <IoMdMoon
-                color={darkTheme ? "#FDB813" : "grey"}
+                color={
+                  darkTheme
+                    ? "#FDB813"
+                    : "grey"
+                }
                 fontSize={20}
                 onClick={() => setTheme(true)}
+                style={{
+                  cursor: "pointer",
+                }}
               />
             </div>
+
             <Menu />
           </div>
         </HeaderContainer>
 
-        <TopContainer mode={containerViewMode}>
+        {/* EDITORS */}
+
+        <TopContainer>
           <SplitPane
             minSize={100}
             maxSize={800}
@@ -793,47 +922,44 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                 20
               }px)`,
               width: "100%",
-              borderLeft: "14px solid #adddd7",
-              borderRight: "14px solid #adddd7",
-              borderBottom: "14px solid #adddd7",
-              boxShadow: "0 0 10px #5eead4",
-            }}
-            onDragFinished={(e) => {
-              resetFindToolbarPosition(
-                window.screen.width - e,
-              );
+              borderLeft:
+                "14px solid #adddd7",
+              borderRight:
+                "14px solid #adddd7",
+              borderBottom:
+                "14px solid #adddd7",
+              boxShadow:
+                "0 0 10px #5eead4",
             }}
           >
-            <div>
+            {/* XML INPUT */}
+
+            <div
+              style={{
+                position: "relative",
+              }}
+            >
               <Editor
                 height={`calc(100vh - ${
                   headerContainerHeight +
                   footerContainerHeight -
                   20
                 }px)`}
-                theme="vs-dark"
+                theme={
+                  darkTheme
+                    ? "vs-dark"
+                    : "vs"
+                }
                 path="file:///xml-to-json/input.xml"
-                value={tempEditorData || editorData || ""}
-                onMount={(editorInstance) => {
-                  editorInstance.focus();
-
-                  editorInstance.onKeyDown((event) => {
-                    const { keyCode, ctrlKey, metaKey } = event;
-
-                    if (
-                      keyCode === 52 &&
-                      (metaKey || ctrlKey)
-                    ) {
-                      setIsPasting(true);
-                    }
-                  });
+                value={editorData}
+                onChange={(value) => {
+                  setEditorData(value || "");
                 }}
                 language="xml"
-                onChange={(data) => {
-                  setEditorData(data || "");
-                }}
                 options={{
-                  minimap: { enabled: false },
+                  minimap: {
+                    enabled: false,
+                  },
                   overviewRulerLanes: 0,
                   wordWrap: "on",
                   fontSize: `${fontSize}px`,
@@ -841,13 +967,20 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                     handleMouseWheel: true,
                     alwaysConsumeMouseWheel: true,
                   },
-                  renderLineHighlight: "none",
+                  renderLineHighlight:
+                    "none",
                   isWholeLine: true,
                 }}
               />
             </div>
 
-            <div>
+            {/* JSON OUTPUT */}
+
+            <div
+              style={{
+                position: "relative",
+              }}
+            >
               <Editor
                 height={`calc(100vh - ${
                   headerContainerHeight +
@@ -855,13 +988,22 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                   20
                 }px)`}
                 width="100%"
-                theme="vs-dark"
+                theme={
+                  darkTheme
+                    ? "vs-dark"
+                    : "vs"
+                }
                 path="file:///xml-to-json/result.json"
                 value={resultData || ""}
-                onMount={onMountResultEditor}
+                onMount={
+                  onMountResultEditor
+                }
                 language="json"
                 options={{
-                  minimap: { enabled: false },
+                  readOnly: false,
+                  minimap: {
+                    enabled: false,
+                  },
                   overviewRulerLanes: 0,
                   wordWrap: "on",
                   fontSize: `${fontSize}px`,
@@ -869,530 +1011,502 @@ const [isBookmarked, bookmark] = useBookmarkStatus();
                     handleMouseWheel: true,
                     alwaysConsumeMouseWheel: true,
                   },
-                  renderLineHighlight: "none",
+                  renderLineHighlight:
+                    "none",
                   isWholeLine: true,
                 }}
               />
+
+              {/* ERROR */}
+
+              {error && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "12px",
+                    right: "12px",
+                    bottom: "12px",
+                    padding:
+                      "10px 12px",
+                    background:
+                      "#fee2e2",
+                    color: "#991b1b",
+                    border:
+                      "1px solid #fecaca",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    zIndex: 5,
+                  }}
+                >
+                  {error}
+                </div>
+              )}
             </div>
           </SplitPane>
         </TopContainer>
 
-        <BottomContainer $show={containerViewMode === "B"}>
+        {/* TOOLBAR */}
+
+        <BottomContainer>
           <div
             style={{
               display: "flex",
               position: "relative",
-              height: `calc(100vh - ${
-                containerViewMode === "H"
-                  ? headerContainerHeight
-                  : footerContainerHeight
-              }px)`,
-              borderTop: "1px solid darkgrey",
+              height: `calc(100vh - ${footerContainerHeight}px)`,
+              borderTop:
+                "1px solid darkgrey",
             }}
           >
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
-                backgroundColor: "#164e63",
+                flexDirection:
+                  "column",
+                backgroundColor:
+                  "#f1f5f9",
+                width: "100%",
               }}
             >
-              <div
-                className="tool-row"
-                style={{
-                  padding: "0px 5px",
-                  display: "flex",
-                  gap: "5px",
-                  justifyContent: "left",
-                }}
-              >
-                {!sId && (
-                  <>
-                    <div
-                      style={{
-                        margin: "4px 4px 2px 4px",
-                      }}
-                    >
-                      <Button
-                        title="Paste"
-                        onClick={onClickPaste}
-                        icon={
-                          <MdOutlineContentPaste size={40} />
-                        }
-                      />
-                    </div>
+              <ToolBar>
+                {/* PASTE */}
 
-                    <div
-                      style={{
-                        margin: "4px 4px 2px 4px",
-                      }}
-                    >
-                      <Button
-                        title="Clear"
-                        onClick={clear}
-                        icon={<AiOutlineDelete size={10} />}
-                      />
-                    </div>
-                  </>
-                )}
+                <ToolBtn
+                  onClick={onClickPaste}
+                >
+                  <MdOutlineContentPaste />
+                  Paste
+                </ToolBtn>
 
-                <div
+                {/* UPLOAD */}
+
+                <label
                   style={{
-                    margin: "4px 4px 2px 4px",
+                    display:
+                      "inline-flex",
                   }}
                 >
-                  <Button
-                    title="Search"
-                    onClick={findWord}
-                    icon={<IoSearch />}
-                  />
-                </div>
-
-                <CopyToClipboard
-                  text={resultData}
-                  onCopy={() => {
-                    setCopyResButtonTitle("Copied");
-                  }}
-                >
-                  <div
-                    style={{
-                      margin: "4px 4px 2px 4px",
-                    }}
-                  >
-                    <Button
-                      title={copyResButtonTitle}
-                      icon={<IoCopyOutline />}
-                    />
-                  </div>
-                </CopyToClipboard>
-
-                <div
-                  style={{
-                    display: "none",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "24px",
-                    marginTop: "5px",
-                  }}
-                >
-                  <div
-                    style={{
-                      color: darkTheme
-                        ? "grey"
-                        : "#FDB813",
-                      fontSize: "22px",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => {
-                      setTheme(false);
-                    }}
-                  >
-                    &#9728;
-                  </div>
-
-                  <div
-                    style={{
-                      margin: "0px 5px",
-                      height: "24px",
-                    }}
-                  >
-                    <Switch
-                      checkedIcon={false}
-                      uncheckedIcon={false}
-                      height={24}
-                      onChange={(e) => {
-                        setTheme(e);
-                      }}
-                      checked={darkTheme}
-                    />
-                  </div>
-
-                  <IoMdMoon
-                    color={
-                      darkTheme ? "#FDB813" : "grey"
+                  <input
+                    type="file"
+                    accept=".xml,text/xml,application/xml"
+                    onChange={
+                      handleFileUpload
                     }
-                    fontSize={20}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => {
-                      setTheme(true);
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  marginTop: "2px",
-                  gap: "10px",
-                  height: "28px",
-                  alignItems: "center",
-                }}
-              >
-                <div
-                  style={{
-                    margin: "4px 4px 2px 8px",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <Button
-                    title="Download"
-                    onClick={() => {
-                      download(
-                        "result.json",
-                        resultData || editorData,
-                      );
-                    }}
-                    icon={<IoMdDownload />}
-                  />
-                </div>
-
-                <div>
-                  <Button
-                    title="Paste Result"
-                    onClick={() => {
-                      if (resultData) {
-                        setEditorData(resultData);
-                        setNewData(resultData);
-                      }
-                    }}
-                    icon={<LuMoveHorizontal />}
-                  />
-                </div>
-
-                <span
-                  style={{
-                    color: "lightgray",
-                    fontSize: "14px",
-                    marginLeft: "48px",
-                    display: "none",
-                  }}
-                >
-                  Font Size :
-                </span>
-
-                <div
-                  style={{
-                    marginLeft: "5px",
-                    display: "none",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    gap: "7px",
-                  }}
-                >
-                  <div
                     style={{
-                      cursor: "pointer",
+                      display: "none",
                     }}
+                  />
+
+                  <ToolBtn
+                    as="span"
+                    style={{
+                      cursor:
+                        "pointer",
+                    }}
+                  >
+                    <IoMdDownload
+                      style={{
+                        transform:
+                          "rotate(180deg)",
+                      }}
+                    />
+                    Upload XML
+                  </ToolBtn>
+                </label>
+
+                {/* CLEAR */}
+
+                <ToolBtn onClick={clear}>
+                  <AiOutlineDelete />
+                  Clear
+                </ToolBtn>
+
+                {/* HISTORY */}
+
+                <ToolBtn
+                  onClick={() =>
+                    setIsHistoryOpen(
+                      true
+                    )
+                  }
+                >
+                  <MdHistory />
+                  History
+                </ToolBtn>
+
+                {/* DOWNLOAD */}
+
+                <ToolBtn
+                  onClick={() =>
+                    download(
+                      "converted.json",
+                      resultData
+                    )
+                  }
+                  disabled={
+                    !resultData
+                  }
+                >
+                  <IoMdDownload />
+                  Download
+                </ToolBtn>
+
+                {/* MOVE RESULT TO INPUT */}
+
+                <ToolBtn
+                  onClick={() => {
+                    if (resultData) {
+                      setEditorData(
+                        resultData
+                      );
+                    }
+                  }}
+                  disabled={
+                    !resultData
+                  }
+                >
+                  <LuMoveHorizontal />
+                  Paste Result
+                </ToolBtn>
+
+                <ToolRight>
+                  {/* DOWNLOAD RESULT */}
+
+                  <ToolBtn
                     onClick={() =>
-                      setFontSize(
-                        fontSize > 5
-                          ? fontSize - 1
-                          : 5,
+                      download(
+                        "converted.json",
+                        resultData
+                      )
+                    }
+                    disabled={
+                      !resultData
+                    }
+                  >
+                    <IoMdDownload />
+                    Download Result
+                  </ToolBtn>
+
+                  {/* COPY */}
+
+                  <CopyToClipboard
+                    text={
+                      resultData || ""
+                    }
+                    onCopy={() =>
+                      setCopyResButtonTitle(
+                        "Copied"
                       )
                     }
                   >
-                    <div
-                      style={{
-                        marginTop: "4px",
-                        marginLeft: "7px",
-                        color: "lightgray",
-                        transform:
-                          "rotate(90deg) translateX(-1px) translateY(5px) scaleY(1.2)",
-                      }}
+                    <ToolBtn
+                      disabled={
+                        !resultData
+                      }
                     >
-                      &#10073;
-                    </div>
-                  </div>
+                      <IoCopyOutline />
+                      {
+                        copyResButtonTitle
+                      }
+                    </ToolBtn>
+                  </CopyToClipboard>
 
-                  <div>
-                    <Button
-                      title={fontSize}
-                      style={{
-                        backgroundColor: "white",
-                        height: "20px",
-                        width: "28px",
-                        padding: "0px",
-                      }}
-                    />
-                  </div>
+                  <ToolDivider />
 
-                  <div
-                    style={{
-                      cursor: "pointer",
-                    }}
-                    onClick={() =>
-                      setFontSize(fontSize + 1)
+                  {/* SEARCH */}
+
+                  <ToolBtn
+                    onClick={
+                      findWord
                     }
                   >
-                    <div
-                      style={{
-                        marginTop: "-5px",
-                        marginLeft: "7px",
-                        color: "lightgray",
-                        transform:
-                          "rotate(45deg) translateX(-1px) translateY(5px)",
-                      }}
-                    >
-                      &#10006;
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {!sId && (
-                <div
-                  style={{
-                    display: "flex",
-                    marginTop: "2px",
-                    gap: "15px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      padding: "5px 8px",
-                      backgroundColor: "#12343b",
-                      marginLeft: "8px",
-                      borderRadius: "2px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: "white",
-                        fontSize: "14px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "12px",
-                        }}
-                      >
-                        HISTORY
-                      </span>
-                      : &nbsp;
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        minWidth: "370px",
-                        maxWidth: "370px",
-                        overflowX: "scroll",
-                        border: "1px solid grey",
-                        padding: "2px",
-                        borderRadius: "4px",
-                        position: "relative",
-                      }}
-                      id="myDivId"
-                    >
-                      {Object.keys(tabData).length < 1 && (
-                        <div
-                          style={{
-                            color: "lightgray",
-                          }}
-                        >
-                          Empty
-                        </div>
-                      )}
-
-                      {getTimeDiff(Object.keys(tabData))
-                        .reverse()
-                        .map(
-                          (
-                            { timestamp, diffStr },
-                            i,
-                          ) => {
-                            const date = new Date(
-                              Number(timestamp),
-                            );
-
-                            const time =
-                              date.toLocaleString();
-
-                            return (
-                              <div
-                                className="saved-tab"
-                                title={time}
-                                key={i}
-                                onMouseEnter={() => {
-                                  setTimestampHovered(
-                                    timestamp,
-                                  );
-                                }}
-                                onMouseLeave={() => {
-                                  setTimestampHovered(
-                                    null,
-                                  );
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    cursor: "pointer",
-                                  }}
-                                  onClick={() => {
-                                    setEditorData(
-                                      getTabData(
-                                        timestamp,
-                                      ),
-                                    );
-
-                                    setNewData(
-                                      getTabData(
-                                        timestamp,
-                                      ),
-                                    );
-
-                                    deleteTab(
-                                      timestamp,
-                                    );
-                                  }}
-                                >
-                                  {diffStr}
-                                </div>
-
-                                <div
-                                  className="icon"
-                                  onClick={() => {
-                                    deleteTab(timestamp);
-                                  }}
-                                >
-                                  <IoMdClose />
-                                </div>
-                              </div>
-                            );
-                          },
-                        )}
-                    </div>
-                  </div>
-                </div>
-              )}
+                    <IoSearch />
+                    Search
+                  </ToolBtn>
+                </ToolRight>
+              </ToolBar>
             </div>
           </div>
 
-          {!sId && (
-            <div className="menu-container">
-              <div
-                style={{
-                  position: "absolute",
-                  right: "10px",
-                  bottom: "2px",
-                  display: "flex",
-                  fontSize: "10px",
-                }}
-              >
-                {HOME_NAV_LINKS.map(
-                  ({ href, label }) => (
-                    <Link
-                      className="menu-item"
-                      href={href}
-                      key={href}
-                    >
-                      {label}
-                    </Link>
-                  ),
-                )}
-              </div>
+          {/* FOOTER NAV */}
+
+          <div className="menu-container">
+            <div
+              style={{
+                position:
+                  "absolute",
+                right: "10px",
+                bottom: "2px",
+                display: "flex",
+                fontSize: "10px",
+              }}
+            >
+              {HOME_NAV_LINKS.map(
+                ({
+                  href,
+                  label,
+                }) => (
+                  <Link
+                    className="menu-item"
+                    href={href}
+                    key={href}
+                  >
+                    {label}
+                  </Link>
+                )
+              )}
             </div>
-          )}
+          </div>
         </BottomContainer>
 
-        {!sId && (
-          <HomeSeoSection>
-            <div className="content">
-              <h2>Online XML to JSON Converter</h2>
+        {/* HISTORY */}
 
-              <p>
-                XML to JSON Converter transforms XML data into readable,
-                formatted JSON in a browser-based split editor. Paste XML
-                on the left and review the generated JSON on the right.
-              </p>
+        {isHistoryOpen && (
+          <HistoryOverlay
+            role="presentation"
+            onClick={() =>
+              setIsHistoryOpen(
+                false
+              )
+            }
+          >
+            <HistoryModal
+              role="dialog"
+              aria-modal="true"
+              onClick={(event) =>
+                event.stopPropagation()
+              }
+            >
+              <HistoryModalHeader>
+                <h2>
+                  XML to JSON Conversion History
+                </h2>
 
-              <p>
-                The tool is useful for converting XML API responses,
-                migrating legacy XML data, inspecting nested XML
-                structures, and preparing XML data for modern JavaScript
-                applications.
-              </p>
+                <button
+                  type="button"
+                  aria-label="Close history"
+                  onClick={() =>
+                    setIsHistoryOpen(
+                      false
+                    )
+                  }
+                >
+                  <IoMdClose />
+                </button>
+              </HistoryModalHeader>
 
-              <div className="link-row">
-                {HOME_NAV_LINKS.map(
-                  ({ href, label }) => (
-                    <Link href={href} key={href}>
-                      {label}
-                    </Link>
-                  ),
+              <HistoryCards>
+                {history.length ===
+                  0 && (
+                  <div
+                    style={{
+                      color:
+                        "#94a3b8",
+                    }}
+                  >
+                    No saved history
+                  </div>
                 )}
-              </div>
 
-              <h3>
-                Why developers use XML to JSON Converter
-              </h3>
+                {history.map(
+                  (item) => (
+                    <HistoryCard
+                      key={item.id}
+                    >
+                      <div
+                        className="card-content"
+                        title={
+                          item.input
+                        }
+                        onClick={() =>
+                          restoreHistory(
+                            item
+                          )
+                        }
+                      >
+                        <span className="timestamp">
+                          {
+                            item.time
+                          }
+                        </span>
 
-              <ul>
-                <li>
-                  Convert XML elements into structured JSON objects.
-                </li>
-                <li>
-                  Automatically group repeated XML elements into JSON
-                  arrays.
-                </li>
-                <li>
-                  Preserve XML attributes using the @ prefix.
-                </li>
-                <li>
-                  Inspect the generated JSON side by side with the
-                  original XML.
-                </li>
-                <li>
-                  Copy, paste, search, download, and adjust editor font
-                  size.
-                </li>
-              </ul>
+                        <span className="preview">
+                          XML:{" "}
+                          {item.input.substring(
+                            0,
+                            120
+                          )}
+                        </span>
 
-              <h3>Common questions</h3>
+                        <span className="preview">
+                          JSON:{" "}
+                          {item.output.substring(
+                            0,
+                            300
+                          )}
+                        </span>
+                      </div>
 
-              <h4>What does XML to JSON Converter do?</h4>
-
-              <p>
-                It parses XML data and converts its structure into
-                formatted JSON that you can inspect, copy, and download
-                directly in your browser.
-              </p>
-
-              <h4>
-                How are repeated XML elements converted?
-              </h4>
-
-              <p>
-                When multiple child elements have the same tag name, the
-                converter groups them into a JSON array.
-              </p>
-
-              <h4>
-                How are XML attributes represented in JSON?
-              </h4>
-
-              <p>
-                XML attributes are preserved as JSON properties prefixed
-                with the @ symbol. For example, an XML attribute named
-                id becomes @id in the generated JSON.
-              </p>
-
-              <h4>
-                Is XML to JSON Converter free to use?
-              </h4>
-
-              <p>
-                Yes. XML to JSON Converter is a free online XML to JSON
-                conversion and formatting tool.
-              </p>
-            </div>
-          </HomeSeoSection>
+                      <button
+                        className="card-delete"
+                        type="button"
+                        onClick={() =>
+                          deleteHistory(
+                            item.id
+                          )
+                        }
+                      >
+                        Delete
+                      </button>
+                    </HistoryCard>
+                  )
+                )}
+              </HistoryCards>
+            </HistoryModal>
+          </HistoryOverlay>
         )}
+
+        {/* SEO CONTENT */}
+
+        <HomeSeoSection>
+          <div className="content">
+            <h2>
+              Free Online XML to JSON Converter
+            </h2>
+
+            <p>
+              XML to JSON Converter is a free
+              online tool that converts XML data
+              into clean and properly formatted JSON
+              directly in your browser.
+            </p>
+
+            <p>
+              Paste XML into the input editor or
+              upload an XML file to instantly
+              convert XML elements, attributes, text,
+              and repeated elements into JSON.
+            </p>
+
+            <div className="link-row">
+              {HOME_NAV_LINKS.map(
+                ({
+                  href,
+                  label,
+                }) => (
+                  <Link
+                    href={href}
+                    key={href}
+                  >
+                    {label}
+                  </Link>
+                )
+              )}
+            </div>
+
+            <h3>
+              Why use this XML to JSON Converter?
+            </h3>
+
+            <ul>
+              <li>
+                Convert XML to JSON instantly
+                in your browser.
+              </li>
+
+              <li>
+                Upload XML files directly from
+                your computer.
+              </li>
+
+              <li>
+                Automatically format the
+                converted JSON.
+              </li>
+
+              <li>
+                Convert XML attributes into
+                JSON properties.
+              </li>
+
+              <li>
+                Handle repeated XML elements
+                as JSON arrays.
+              </li>
+
+              <li>
+                Copy or download the converted
+                JSON.
+              </li>
+
+              <li>
+                No server-side processing is
+                required.
+              </li>
+            </ul>
+
+            <h3>
+              Common Questions
+            </h3>
+
+            <h4>
+              What is XML to JSON conversion?
+            </h4>
+
+            <p>
+              XML to JSON conversion transforms
+              structured XML data into JSON format.
+              JSON is commonly used for APIs,
+              web applications, JavaScript
+              applications, and data exchange.
+            </p>
+
+            <h4>
+              How do I convert XML to JSON?
+            </h4>
+
+            <p>
+              Paste your XML into the input editor
+              or upload an XML file. The converter
+              automatically parses the XML and
+              displays the resulting JSON in the
+              output editor.
+            </p>
+
+            <h4>
+              Does this converter support XML attributes?
+            </h4>
+
+            <p>
+              Yes. XML attributes are converted
+              into an{" "}
+              <strong>
+                @attributes
+              </strong>{" "}
+              object in the resulting JSON.
+            </p>
+
+            <h4>
+              How are repeated XML elements converted?
+            </h4>
+
+            <p>
+              When an XML element occurs multiple
+              times under the same parent, the
+              converter represents those elements
+              as a JSON array.
+            </p>
+
+            <h4>
+              Is this XML to JSON converter free?
+            </h4>
+
+            <p>
+              Yes. This XML to JSON converter is
+              free to use online and processes the
+              conversion directly in your browser.
+            </p>
+          </div>
+        </HomeSeoSection>
       </main>
     </>
   );
