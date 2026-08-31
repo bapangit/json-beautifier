@@ -1,23 +1,103 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import styled from "styled-components";
-import { LuSearch } from "react-icons/lu";
+import { FiSearch, FiX, FiCode, FiRepeat, FiArchive } from "react-icons/fi";
 import { FaTools } from "react-icons/fa";
 
-const menuItems = [
-  { href: "/", label: "JSON Beautifier" },
-  { href: "/json-minify", label: "JSON Minifier" },
-  { href: "/json-to-xml", label: "JSON to XML" },
-  { href: "/xml-to-json", label: "XML to JSON" },
-  { href: "/json-to-csv", label: "JSON to CSV" },
-  { href: "/csv-to-json", label: "CSV to JSON" },
-  { href: "/gzip-decompressor", label: "GZip Decompress" },
-  { href: "/gzip-compressor", label: "GZip Compress" },
-  { href: "/brotli-decompressor", label: "brotli Decompress" },
-  { href: "/brotli-compressor", label: "brotli Compress" },
+/*
+ * Tools are grouped by function rather than shown as a flat
+ * grid — the grouping reflects how the tools actually relate
+ * to each other (format vs. convert vs. compress).
+ */
+const menuGroups = [
+  {
+    id: "format",
+    label: "Format",
+    icon: FiCode,
+    items: [
+      {
+        href: "/",
+        label: "JSON Beautifier",
+        description: "Pretty-print and indent JSON",
+      },
+      {
+        href: "/json-minify",
+        label: "JSON Minifier",
+        description: "Strip whitespace from JSON",
+      },
+    ],
+  },
+  {
+    id: "convert",
+    label: "Convert",
+    icon: FiRepeat,
+    items: [
+      {
+        href: "/json-to-xml",
+        label: "JSON to XML",
+        description: "Convert JSON into XML",
+      },
+      {
+        href: "/xml-to-json",
+        label: "XML to JSON",
+        description: "Convert XML into JSON",
+      },
+      {
+        href: "/json-to-csv",
+        label: "JSON to CSV",
+        description: "Convert JSON into CSV",
+      },
+      {
+        href: "/csv-to-json",
+        label: "CSV to JSON",
+        description: "Convert CSV into JSON",
+      },
+    ],
+  },
+  {
+    id: "compress",
+    label: "Compress",
+    icon: FiArchive,
+    items: [
+      {
+        href: "/gzip-decompressor",
+        label: "GZip Decompress",
+        description: "Decompress a .gz file",
+      },
+      {
+        href: "/gzip-compressor",
+        label: "GZip Compress",
+        description: "Compress into a .gz file",
+      },
+      {
+        href: "/brotli-decompressor",
+        label: "brotli Decompress",
+        description: "Decompress a .br file",
+      },
+      {
+        href: "/brotli-compressor",
+        label: "brotli Compress",
+        description: "Compress into a .br file",
+      },
+    ],
+  },
 ];
+
+/* ---------- palette ---------- */
+const c = {
+  bg: "#0e1116",
+  surface: "#161b22",
+  surfaceRaised: "#1b212b",
+  border: "rgba(255, 255, 255, 0.08)",
+  borderStrong: "rgba(255, 255, 255, 0.14)",
+  text: "#e6edf3",
+  textMuted: "#8b95a1",
+  textFaint: "#5c6470",
+  accent: "#109dcc",
+  accentSoft: "rgba(16, 157, 204, 0.12)",
+};
 
 const MenuButton = styled.button`
   display: inline-flex;
@@ -29,43 +109,32 @@ const MenuButton = styled.button`
   height: 38px;
   padding: 0 14px;
 
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  border: 1px solid ${c.border};
+  border-radius: 9px;
 
-  background: rgba(50, 53, 58, 0.9);
-  color: #f3f4f6;
+  background: ${c.surface};
+  color: ${c.text};
 
   font-size: 14px;
   font-weight: 500;
 
   cursor: pointer;
 
-  transition:
-    background 0.2s ease,
-    transform 0.2s ease,
-    border-color 0.2s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
 
   svg {
-    color: #109dcc;
-
-    transition:
-      transform 0.2s ease,
-      color 0.2s ease;
+    color: ${c.accent};
+    flex-shrink: 0;
   }
 
   &:hover {
-    background: #109dcc;
-    border-color: #109dcc;
-    transform: translateY(-1px);
-
-    svg {
-      color: #ffffff;
-      transform: rotate(10deg);
-    }
+    border-color: ${c.borderStrong};
+    background: ${c.surfaceRaised};
   }
 
-  &:active {
-    transform: translateY(0);
+  &:focus-visible {
+    outline: 2px solid ${c.accent};
+    outline-offset: 2px;
   }
 
   @media (max-width: 600px) {
@@ -81,158 +150,136 @@ const ModalBackdrop = styled.div`
   position: fixed;
   inset: 0;
 
-  background: rgba(9, 12, 16, 0.76);
+  background: rgba(6, 8, 11, 0.72);
+  backdrop-filter: blur(3px);
 
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
 
   z-index: 999;
+
+  animation: fade-in 0.15s ease;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `;
 
 const Modal = styled.div`
-  width: min(88vw, 1100px);
-  height: min(78vh, 700px);
-
-  background: linear-gradient(
-    180deg,
-    rgba(35, 38, 43, 0.98),
-    rgba(21, 24, 29, 0.96)
-  );
-
-  border-radius: 18px;
-
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
-
-  padding: 18px 16px 16px;
-
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: min(92vw, 800px);
+  max-height: min(82vh, 640px);
 
   display: flex;
   flex-direction: column;
+
+  background: ${c.surface};
+  border: 1px solid ${c.border};
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
 
   overflow: hidden;
 `;
 
 const ModalHeader = styled.div`
-  position: relative;
-
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 12px;
 
-  margin-bottom: 14px;
-
-  min-height: 36px;
+  padding: 18px 20px;
+  border-bottom: 1px solid ${c.border};
 
   h3 {
     margin: 0;
-
-    color: #109dcc;
-
-    font-size: clamp(24px, 3vw, 36px);
-
-    font-weight: 400;
-
-    letter-spacing: 2px;
-
-    text-align: center;
+    color: ${c.text};
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
   }
 `;
 
 const CloseButton = styled.button`
-  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
-  right: 0;
-  top: 50%;
+  width: 30px;
+  height: 30px;
 
-  transform: translateY(-50%);
+  border: 1px solid transparent;
+  border-radius: 8px;
 
-  border: none;
-
-  background: rgba(255, 255, 255, 0.08);
-
-  color: #f3f4f6;
-
-  font-size: 24px;
+  background: transparent;
+  color: ${c.textMuted};
 
   cursor: pointer;
 
-  border-radius: 10px;
-
-  width: 42px;
-  height: 42px;
-
-  transition:
-    background 0.2s ease,
-    transform 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: ${c.surfaceRaised};
+    color: ${c.text};
   }
 
-  &:active {
-    transform: translateY(-50%) scale(0.95);
+  &:focus-visible {
+    outline: 2px solid ${c.accent};
+    outline-offset: 1px;
   }
 `;
 
 const SearchBar = styled.div`
   position: relative;
-
-  width: 100%;
-  max-width: 780px;
-
-  margin: 0 auto 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid ${c.border};
 
   svg {
     position: absolute;
-
-    left: 16px;
+    left: 32px;
     top: 50%;
-
-    color: #109dcc;
-
-    pointer-events: none;
-
     transform: translateY(-50%);
+    color: ${c.textFaint};
+    pointer-events: none;
   }
 `;
 
 const SearchInput = styled.input`
   width: 100%;
+  height: 38px;
 
-  min-height: 42px;
-
-  padding: 10px 46px 10px 46px;
-
+  padding: 0 12px 0 34px;
   box-sizing: border-box;
 
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid ${c.border};
+  border-radius: 8px;
 
-  border-radius: 12px;
-
-  background: rgba(9, 12, 16, 0.38);
-
-  color: #f3f4f6;
+  background: ${c.bg};
+  color: ${c.text};
 
   font: inherit;
-
-  font-size: 16px;
+  font-size: 14px;
 
   outline: none;
 
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: border-color 0.15s ease;
 
   &::placeholder {
-    color: rgba(243, 244, 246, 0.6);
+    color: ${c.textFaint};
   }
 
   &:focus {
-    border-color: #109dcc;
-
-    box-shadow: 0 0 0 3px rgba(16, 157, 204, 0.18);
+    border-color: ${c.accent};
   }
 
   &::-webkit-search-cancel-button {
@@ -240,159 +287,183 @@ const SearchInput = styled.input`
   }
 `;
 
-const NavGrid = styled.div`
+const ListArea = styled.div`
   flex: 1;
-
   min-height: 0;
-
   overflow-y: auto;
+  padding: 8px 12px 16px;
 
-  overscroll-behavior: contain;
-
-  display: grid;
-
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-
-  /*
-   * Fixed row height prevents the last row
-   * from becoming unnecessarily tall.
-   */
-  grid-auto-rows: 150px;
-
-  gap: 16px;
-
-  /*
-   * Prevent grid items from stretching vertically.
-   */
-  align-items: start;
-
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: ${c.borderStrong} transparent;
 
   &::-webkit-scrollbar {
-    display: none;
+    width: 8px;
   }
 
-  @media (max-width: 900px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  &::-webkit-scrollbar-thumb {
+    background: ${c.borderStrong};
+    border-radius: 8px;
+  }
+`;
 
-    grid-auto-rows: 150px;
+const Group = styled.div`
+  & + & {
+    margin-top: 6px;
+  }
+`;
+
+const GroupHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 12px 10px 6px;
+
+  color: ${c.textMuted};
+  font-size: 13px;
+  font-weight: 600;
+
+  svg {
+    color: ${c.accent};
+    flex-shrink: 0;
+  }
+`;
+
+const GroupItems = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+
+  padding: 4px 10px 14px;
+
+  @media (max-width: 500px) {
+    grid-template-columns: 1fr 1fr;
+  }
+`;
+
+const ItemRow = styled(Link)`
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  height: 100%;
+  box-sizing: border-box;
+
+  padding: 12px 13px;
+  border: 1px solid ${c.border};
+  border-radius: 10px;
+
+  background: ${c.surfaceRaised};
+  text-decoration: none;
+
+  transition: border-color 0.12s ease, background 0.12s ease,
+    transform 0.12s ease;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    border-radius: 2px;
+    background: transparent;
+    transition: background 0.12s ease;
   }
 
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-
-    grid-auto-rows: 120px;
+  &:hover,
+  &:focus-visible {
+    border-color: ${c.borderStrong};
+    background: ${c.accentSoft};
+    transform: translateY(-1px);
   }
+
+  &:hover::before,
+  &:focus-visible::before {
+    background: ${c.accent};
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: border-color 0.12s ease, background 0.12s ease;
+    &:hover,
+    &:focus-visible {
+      transform: none;
+    }
+  }
+`;
+
+const ItemLabel = styled.span`
+  color: ${c.text};
+  font-size: 14.5px;
+  font-weight: 500;
+`;
+
+const ItemDescription = styled.span`
+  color: ${c.textMuted};
+  font-size: 12.5px;
 `;
 
 const EmptyState = styled.p`
-  grid-column: 1 / -1;
-
-  margin: 24px 0;
-
-  color: rgba(243, 244, 246, 0.72);
-
+  margin: 32px 12px;
+  color: ${c.textMuted};
+  font-size: 14px;
   text-align: center;
-`;
-
-const NavLink = styled(Link)`
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  /*
-   * Fill the fixed grid row without causing
-   * the grid row itself to stretch.
-   */
-  width: 100%;
-  height: 100%;
-
-  box-sizing: border-box;
-
-  padding: 14px;
-
-  border-radius: 16px;
-
-  background: linear-gradient(145deg, #ffffff, #f1f4f5);
-
-  color: #109dcc;
-
-  text-decoration: none;
-
-  font-size: clamp(18px, 2.2vw, 30px);
-
-  font-style: italic;
-
-  font-weight: 400;
-
-  letter-spacing: 2px;
-
-  line-height: 1.25;
-
-  text-align: center;
-
-  text-transform: uppercase;
-
-  border: 1px solid rgba(215, 222, 225, 0.8);
-
-  box-shadow: 0 10px 24px rgba(8, 31, 42, 0.16);
-
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-
-    background: linear-gradient(
-      145deg,
-      #ffffff,
-      #e1f3f7
-    );
-
-    box-shadow: 0 14px 28px rgba(8, 31, 42, 0.2);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  @media (max-width: 600px) {
-    padding: 14px;
-
-    font-size: clamp(18px, 6vw, 27px);
-
-    letter-spacing: 1px;
-  }
 `;
 
 export default function Menu() {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const inputRef = useRef(null);
 
-  const filteredMenuItems = menuItems.filter((item) =>
-    item.label
-      .toLowerCase()
-      .includes(searchQuery.trim().toLowerCase()),
-  );
+  const filteredGroups = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) return menuGroups;
+
+    return menuGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          item.label.toLowerCase().includes(query),
+        ),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [searchQuery]);
+
+  const hasResults = filteredGroups.length > 0;
 
   useEffect(() => {
     if (!isOpen) return;
 
     const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow =
-      document.documentElement.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
 
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
 
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
+    const focusTimer = setTimeout(() => inputRef.current?.focus(), 20);
+
     return () => {
       document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow =
-        previousHtmlOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      clearTimeout(focusTimer);
     };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) setSearchQuery("");
   }, [isOpen]);
 
   return (
@@ -402,66 +473,68 @@ export default function Menu() {
         aria-label="Open site navigation menu"
         onClick={() => setIsOpen(true)}
       >
-        <FaTools size={16} />
-
+        <FaTools size={15} />
         <span>Tools</span>
       </MenuButton>
 
       {isOpen && (
-        <ModalBackdrop
-          onClick={() => setIsOpen(false)}
-        >
+        <ModalBackdrop onClick={() => setIsOpen(false)}>
           <Modal
-            onClick={(event) =>
-              event.stopPropagation()
-            }
+            role="dialog"
+            aria-modal="true"
+            aria-label="Search tools"
+            onClick={(event) => event.stopPropagation()}
           >
             <ModalHeader>
-              <h3>Search Tools</h3>
-
+              <h3>Tools</h3>
               <CloseButton
                 type="button"
                 aria-label="Close menu"
                 onClick={() => setIsOpen(false)}
               >
-                ×
+                <FiX size={17} />
               </CloseButton>
             </ModalHeader>
 
             <SearchBar>
-              <LuSearch
-                size={18}
-                aria-hidden="true"
-              />
-
+              <FiSearch size={16} aria-hidden="true" />
               <SearchInput
+                ref={inputRef}
                 type="search"
                 value={searchQuery}
-                onChange={(event) =>
-                  setSearchQuery(event.target.value)
-                }
+                onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search tools"
                 aria-label="Search navigation tools"
               />
             </SearchBar>
 
-            <NavGrid>
-              {filteredMenuItems.length > 0 ? (
-                filteredMenuItems.map((item) => (
-                  <NavLink
-                    href={item.href}
-                    key={item.href}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    {item.label}
-                  </NavLink>
+            <ListArea>
+              {hasResults ? (
+                filteredGroups.map((group) => (
+                  <Group key={group.id}>
+                    <GroupHeader>
+                      <group.icon size={13} />
+                      {group.label}
+                    </GroupHeader>
+
+                    <GroupItems>
+                      {group.items.map((item) => (
+                        <ItemRow
+                          href={item.href}
+                          key={item.href}
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <ItemLabel>{item.label}</ItemLabel>
+                          <ItemDescription>{item.description}</ItemDescription>
+                        </ItemRow>
+                      ))}
+                    </GroupItems>
+                  </Group>
                 ))
               ) : (
-                <EmptyState>
-                  No tools found.
-                </EmptyState>
+                <EmptyState>No tools match &ldquo;{searchQuery}&rdquo;.</EmptyState>
               )}
-            </NavGrid>
+            </ListArea>
           </Modal>
         </ModalBackdrop>
       )}

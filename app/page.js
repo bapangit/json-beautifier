@@ -1,7 +1,7 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
@@ -18,6 +18,9 @@ import Button from "@/Components/Buttons/Button";
 const headerContainerHeight = 70;
 const footerContainerHeight = 80;
 
+const THEME_STORAGE_KEY = "json-beautifier-theme";
+const HISTORY_STORAGE_KEY = "json-beautifier-history";
+
 const HOME_NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/blog", label: "Blog" },
@@ -25,6 +28,42 @@ const HOME_NAV_LINKS = [
   { href: "/contact", label: "Contact" },
   { href: "/privacy-policy", label: "Privacy Policy" },
 ];
+
+/*
+ * Read the saved theme synchronously (client only).
+ * Used as the useState initializer so there is no
+ * "light, then flip to dark" render in between.
+ */
+function getStoredIsDark() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) === "dark";
+  } catch {
+    return false;
+  }
+}
+
+/*
+ * Define the two Monaco themes once, before either
+ * editor mounts, so the `theme` prop is correct on the
+ * very first paint instead of being switched afterward.
+ */
+function defineEditorThemes(monacoInstance) {
+  monacoInstance.editor.defineTheme("myThemeDark", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {},
+  });
+
+  monacoInstance.editor.defineTheme("myThemeLight", {
+    base: "vs",
+    inherit: true,
+    rules: [],
+    colors: {},
+  });
+}
 
 const HeaderContainer = styled.div`
   width: 100%;
@@ -346,6 +385,14 @@ function App() {
   const [editorData, setEditorData] = useState("");
   const [resultData, setResultData] = useState("");
   const [error, setError] = useState("");
+
+  /*
+   * Lazy initializer runs once, synchronously, before the
+   * first paint on the client — this is what prevents the
+   * "light theme flashes then flips to dark" flicker.
+   * (Server render still returns false; see the note below
+   * the component for the hydration tradeoff.)
+   */
   const [darkTheme, setDarkTheme] = useState(false);
   const [fontSize, setFontSize] = useState(14);
 
@@ -356,6 +403,16 @@ function App() {
   const [monaco, setMonaco] = useState(null);
 
   const [copyResButtonTitle, setCopyResButtonTitle] = useState("Copy");
+
+  /*
+   * Apply the saved theme in a layout effect, which runs
+   * synchronously before the browser paints — unlike a
+   * regular effect, this avoids an extra visible frame at
+   * the wrong theme.
+   */
+  useLayoutEffect(() => {
+    setDarkTheme(getStoredIsDark());
+  }, []);
 
   /*
    * Beautify / format JSON.
@@ -405,10 +462,7 @@ function App() {
       const updated = [item, ...previous].slice(0, 20);
 
       try {
-        localStorage.setItem(
-          "json-beautifier-history",
-          JSON.stringify(updated),
-        );
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
       } catch {}
 
       return updated;
@@ -420,7 +474,7 @@ function App() {
    */
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("json-beautifier-history");
+      const saved = localStorage.getItem(HISTORY_STORAGE_KEY);
 
       if (saved) {
         setHistory(JSON.parse(saved));
@@ -540,7 +594,10 @@ function App() {
   }, [editorData]);
 
   /*
-   * Theme.
+   * Theme toggle (triggered by the switch/icons in the header).
+   * Themes were already defined in `beforeMount`, so this just
+   * flips which one is active — same call as before, no change
+   * needed here.
    */
   const setTheme = (isDark) => {
     if (monaco) {
@@ -550,45 +607,17 @@ function App() {
     setDarkTheme(isDark);
 
     try {
-      localStorage.setItem("json-beautifier-theme", isDark ? "dark" : "light");
+      localStorage.setItem(THEME_STORAGE_KEY, isDark ? "dark" : "light");
     } catch {}
   };
 
   /*
-   * Load saved theme.
-   */
-  useEffect(() => {
-    try {
-      const theme = localStorage.getItem("json-beautifier-theme");
-
-      if (theme === "dark") {
-        setDarkTheme(true);
-      }
-    } catch {}
-  }, []);
-
-  /*
-   * Monaco mount.
+   * Monaco mount — themes are already defined by `beforeMount`
+   * and the correct one is already active via the `theme` prop,
+   * so this only needs to capture the instances.
    */
   const onMountResultEditor = (editorInstance, monacoInstance) => {
-    monacoInstance.editor.defineTheme("myThemeDark", {
-      base: "vs-dark",
-      inherit: true,
-      rules: [],
-      colors: {},
-    });
-
-    monacoInstance.editor.defineTheme("myThemeLight", {
-      base: "vs",
-      inherit: true,
-      rules: [],
-      colors: {},
-    });
-
-    monacoInstance.editor.setTheme(darkTheme ? "myThemeDark" : "myThemeLight");
-
     setEditor(editorInstance);
-
     setMonaco(monacoInstance);
   };
 
@@ -621,15 +650,29 @@ function App() {
       const updated = previous.filter((item) => item.id !== id);
 
       try {
-        localStorage.setItem(
-          "json-beautifier-history",
-          JSON.stringify(updated),
-        );
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
       } catch {}
 
       return updated;
     });
   };
+
+  const activeThemeName = darkTheme ? "myThemeDark" : "myThemeLight";
+
+  /*
+   * Placeholder shown while Monaco's script/worker is loading.
+   * Matching the current theme's background instead of leaving
+   * it blank (`loading={null}`) removes the last visible seam.
+   */
+  const editorLoadingPlaceholder = (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        background: darkTheme ? "#1e1e1e" : "#ffffff",
+      }}
+    />
+  );
 
   return (
     <>
@@ -774,11 +817,12 @@ function App() {
               }}
             >
               <Editor
-                loading={null}
+                loading={editorLoadingPlaceholder}
                 height={`calc(100vh - ${
                   headerContainerHeight + footerContainerHeight - 20
                 }px)`}
-                theme={darkTheme ? "vs-dark" : "vs"}
+                theme={activeThemeName}
+                beforeMount={defineEditorThemes}
                 path="file:///json-beautifier/input.json"
                 value={editorData}
                 onChange={(value) => {
@@ -810,12 +854,13 @@ function App() {
               }}
             >
               <Editor
-                loading={null}
+                loading={editorLoadingPlaceholder}
                 height={`calc(100vh - ${
                   headerContainerHeight + footerContainerHeight - 20
                 }px)`}
                 width="100%"
-                theme={darkTheme ? "vs-dark" : "vs"}
+                theme={activeThemeName}
+                beforeMount={defineEditorThemes}
                 path="file:///json-beautifier/result.json"
                 value={resultData || ""}
                 onMount={onMountResultEditor}
