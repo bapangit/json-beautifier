@@ -104,18 +104,5 @@ export default function sitemap() {
       changeFrequency: "weekly",
       priority: 0.9,
     },
-    ,
-    {
-      url: `${SITE_URL}/brotli-compressor`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
-      url: `${SITE_URL}/brotli-decompressor`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
   ];
 }
