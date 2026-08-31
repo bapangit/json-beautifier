@@ -15,6 +15,8 @@ const menuItems = [
   { href: "/csv-to-json", label: "CSV to JSON" },
   { href: "/gzip-decompressor", label: "GZip Decompress" },
   { href: "/gzip-compressor", label: "GZip Compress" },
+  { href: "/brotli-decompressor", label: "brotli Decompress" },
+  { href: "/brotli-compressor", label: "brotli Compress" },
 ];
 
 const MenuButton = styled.button`
