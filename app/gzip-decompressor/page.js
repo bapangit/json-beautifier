@@ -1,16 +1,13 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
 import CopyToClipboard from "react-copy-to-clipboard";
 import { IoMdClose, IoMdMoon, IoMdDownload } from "react-icons/io";
-import {
-  MdHistory,
-  MdOutlineContentPaste,
-} from "react-icons/md";
+import { MdHistory, MdOutlineContentPaste } from "react-icons/md";
 import { AiOutlineDelete } from "react-icons/ai";
 import { IoSearch, IoCopyOutline } from "react-icons/io5";
 import { LuMoveHorizontal } from "react-icons/lu";
@@ -21,6 +18,9 @@ import Button from "@/Components/Buttons/Button";
 const headerContainerHeight = 70;
 const footerContainerHeight = 80;
 
+const THEME_STORAGE_KEY = "gzip-theme";
+const HISTORY_STORAGE_KEY = "gzip-decompress-history";
+
 const HOME_NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/blog", label: "Blog" },
@@ -28,6 +28,40 @@ const HOME_NAV_LINKS = [
   { href: "/contact", label: "Contact" },
   { href: "/privacy-policy", label: "Privacy Policy" },
 ];
+
+/*
+ * Read the saved theme synchronously (client only).
+ */
+function getStoredIsDark() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) === "dark";
+  } catch {
+    return false;
+  }
+}
+
+/*
+ * Define both Monaco themes once, before either editor
+ * mounts, so the `theme` prop is correct on first paint
+ * instead of being switched right after mount.
+ */
+function defineEditorThemes(monacoInstance) {
+  monacoInstance.editor.defineTheme("myThemeDark", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {},
+  });
+
+  monacoInstance.editor.defineTheme("myThemeLight", {
+    base: "vs",
+    inherit: true,
+    rules: [],
+    colors: {},
+  });
+}
 
 const HeaderContainer = styled.div`
   width: 100%;
@@ -194,12 +228,9 @@ const ToolBtn = styled.button`
   gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
-  border: 1px solid ${(p) =>
-    p.$primary ? "#0f9d78" : "#e2e8f0"};
-  background: ${(p) =>
-    p.$primary ? "#0f9d78" : "#ffffff"};
-  color: ${(p) =>
-    p.$primary ? "#ffffff" : "#334155"};
+  border: 1px solid ${(p) => (p.$primary ? "#0f9d78" : "#e2e8f0")};
+  background: ${(p) => (p.$primary ? "#0f9d78" : "#ffffff")};
+  color: ${(p) => (p.$primary ? "#ffffff" : "#334155")};
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -207,10 +238,8 @@ const ToolBtn = styled.button`
   transition: background 0.15s ease, border-color 0.15s ease;
 
   &:hover {
-    background: ${(p) =>
-      p.$primary ? "#0c8a67" : "#f1f5f9"};
-    border-color: ${(p) =>
-      p.$primary ? "#0c8a67" : "#cbd5e1"};
+    background: ${(p) => (p.$primary ? "#0c8a67" : "#f1f5f9")};
+    border-color: ${(p) => (p.$primary ? "#0c8a67" : "#cbd5e1")};
   }
 
   &:active {
@@ -354,6 +383,12 @@ function App() {
   const [editorData, setEditorData] = useState("");
   const [resultData, setResultData] = useState("");
   const [error, setError] = useState("");
+
+  /*
+   * Starts false (SSR-safe); the useLayoutEffect below
+   * corrects it before the browser paints, avoiding the
+   * visible flash you were seeing.
+   */
   const [darkTheme, setDarkTheme] = useState(false);
   const [fontSize, setFontSize] = useState(14);
 
@@ -363,8 +398,16 @@ function App() {
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
 
-  const [copyResButtonTitle, setCopyResButtonTitle] =
-    useState("Copy");
+  const [copyResButtonTitle, setCopyResButtonTitle] = useState("Copy");
+
+  /*
+   * Apply the saved theme before the browser paints —
+   * useLayoutEffect (not useEffect) is what removes the
+   * extra visible frame at the wrong theme.
+   */
+  useLayoutEffect(() => {
+    setDarkTheme(getStoredIsDark());
+  }, []);
 
   /*
    * Decode Base64 into bytes.
@@ -408,14 +451,12 @@ function App() {
         compressedBytes[1] !== 0x8b
       ) {
         throw new Error(
-          "Invalid GZip data. Please provide valid Base64-encoded GZip data."
+          "Invalid GZip data. Please provide valid Base64-encoded GZip data.",
         );
       }
 
       if (typeof DecompressionStream === "undefined") {
-        throw new Error(
-          "GZip decompression is not supported by this browser."
-        );
+        throw new Error("GZip decompression is not supported by this browser.");
       }
 
       const stream = new Blob([compressedBytes])
@@ -431,10 +472,7 @@ function App() {
       saveToHistory(input, text);
     } catch (err) {
       setResultData("");
-      setError(
-        err?.message ||
-          "Unable to decompress the GZip data."
-      );
+      setError(err?.message || "Unable to decompress the GZip data.");
     }
   };
 
@@ -453,25 +491,15 @@ function App() {
 
       const bytes = new Uint8Array(arrayBuffer);
 
-      if (
-        bytes.length < 2 ||
-        bytes[0] !== 0x1f ||
-        bytes[1] !== 0x8b
-      ) {
-        throw new Error(
-          "The selected file is not a valid GZip file."
-        );
+      if (bytes.length < 2 || bytes[0] !== 0x1f || bytes[1] !== 0x8b) {
+        throw new Error("The selected file is not a valid GZip file.");
       }
 
       if (typeof DecompressionStream === "undefined") {
-        throw new Error(
-          "GZip decompression is not supported by this browser."
-        );
+        throw new Error("GZip decompression is not supported by this browser.");
       }
 
-      const stream = new Blob([bytes])
-        .stream()
-        .pipeThrough(new DecompressionStream("gzip"));
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
 
       const response = new Response(stream);
 
@@ -485,10 +513,7 @@ function App() {
     } catch (err) {
       setResultData("");
 
-      setError(
-        err?.message ||
-          "Unable to decompress the selected GZip file."
-      );
+      setError(err?.message || "Unable to decompress the selected GZip file.");
     }
 
     event.target.value = "";
@@ -511,10 +536,7 @@ function App() {
       const updated = [item, ...previous].slice(0, 20);
 
       try {
-        localStorage.setItem(
-          "gzip-decompress-history",
-          JSON.stringify(updated)
-        );
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
       } catch {}
 
       return updated;
@@ -526,9 +548,7 @@ function App() {
    */
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(
-        "gzip-decompress-history"
-      );
+      const saved = localStorage.getItem(HISTORY_STORAGE_KEY);
 
       if (saved) {
         setHistory(JSON.parse(saved));
@@ -569,8 +589,7 @@ function App() {
 
     element.setAttribute(
       "href",
-      "data:text/plain;charset=utf-8," +
-        encodeURIComponent(text || "")
+      "data:text/plain;charset=utf-8," + encodeURIComponent(text || ""),
     );
 
     element.setAttribute("download", filename);
@@ -615,57 +634,27 @@ function App() {
   }, [editorData]);
 
   /*
-   * Theme.
+   * Theme toggle. Themes are already defined via
+   * `beforeMount`, so this just flips which is active.
    */
   const setTheme = (isDark) => {
     if (monaco) {
-      monaco.editor.setTheme(
-        isDark ? "myThemeDark" : "myThemeLight"
-      );
+      monaco.editor.setTheme(isDark ? "myThemeDark" : "myThemeLight");
     }
 
     setDarkTheme(isDark);
 
     try {
-      localStorage.setItem(
-        "gzip-theme",
-        isDark ? "dark" : "light"
-      );
+      localStorage.setItem(THEME_STORAGE_KEY, isDark ? "dark" : "light");
     } catch {}
   };
 
-  useEffect(() => {
-    try {
-      const theme = localStorage.getItem("gzip-theme");
-
-      if (theme === "dark") {
-        setDarkTheme(true);
-      }
-    } catch {}
-  }, []);
-
   /*
-   * Monaco mount.
+   * Monaco mount — themes are already defined by
+   * `beforeMount` and the correct one is already active
+   * via the `theme` prop, so this only captures instances.
    */
   const onMountResultEditor = (editorInstance, monacoInstance) => {
-    monacoInstance.editor.defineTheme("myThemeDark", {
-      base: "vs-dark",
-      inherit: true,
-      rules: [],
-      colors: {},
-    });
-
-    monacoInstance.editor.defineTheme("myThemeLight", {
-      base: "vs",
-      inherit: true,
-      rules: [],
-      colors: {},
-    });
-
-    monacoInstance.editor.setTheme(
-      darkTheme ? "myThemeDark" : "myThemeLight"
-    );
-
     setEditor(editorInstance);
     setMonaco(monacoInstance);
   };
@@ -694,20 +683,32 @@ function App() {
    */
   const deleteHistory = (id) => {
     setHistory((previous) => {
-      const updated = previous.filter(
-        (item) => item.id !== id
-      );
+      const updated = previous.filter((item) => item.id !== id);
 
       try {
-        localStorage.setItem(
-          "gzip-decompress-history",
-          JSON.stringify(updated)
-        );
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
       } catch {}
 
       return updated;
     });
   };
+
+  const activeThemeName = darkTheme ? "myThemeDark" : "myThemeLight";
+
+  /*
+   * Placeholder shown while Monaco's script/worker loads,
+   * matching the current theme's background instead of
+   * being left blank.
+   */
+  const editorLoadingPlaceholder = (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        background: darkTheme ? "#1e1e1e" : "#ffffff",
+      }}
+    />
+  );
 
   return (
     <>
@@ -722,9 +723,7 @@ function App() {
 
         <HeaderContainer>
           <div className="brand-nav">
-            <h1 className="brand-title">
-              GZip Decompressor
-            </h1>
+            <h1 className="brand-title">GZip Decompressor</h1>
           </div>
 
           <div
@@ -754,11 +753,7 @@ function App() {
                   fontSize: "16px",
                   cursor: "pointer",
                 }}
-                onClick={() =>
-                  setFontSize(
-                    fontSize > 5 ? fontSize - 1 : 5
-                  )
-                }
+                onClick={() => setFontSize(fontSize > 5 ? fontSize - 1 : 5)}
               >
                 -
               </button>
@@ -775,9 +770,7 @@ function App() {
                   fontSize: "16px",
                   cursor: "pointer",
                 }}
-                onClick={() =>
-                  setFontSize(fontSize + 1)
-                }
+                onClick={() => setFontSize(fontSize + 1)}
               >
                 +
               </button>
@@ -795,9 +788,7 @@ function App() {
             >
               <div
                 style={{
-                  color: darkTheme
-                    ? "grey"
-                    : "#FDB813",
+                  color: darkTheme ? "grey" : "#FDB813",
                   fontSize: "22px",
                   cursor: "pointer",
                 }}
@@ -822,14 +813,11 @@ function App() {
               </div>
 
               <IoMdMoon
-                color={
-                  darkTheme ? "#FDB813" : "grey"
-                }
+                color={darkTheme ? "#FDB813" : "grey"}
                 fontSize={20}
                 onClick={() => setTheme(true)}
                 style={{ cursor: "pointer" }}
               />
-              
             </div>
             <Menu />
           </div>
@@ -845,9 +833,7 @@ function App() {
             split="vertical"
             style={{
               height: `calc(100vh - ${
-                headerContainerHeight +
-                footerContainerHeight -
-                20
+                headerContainerHeight + footerContainerHeight - 20
               }px)`,
               width: "100%",
               borderLeft: "14px solid #adddd7",
@@ -860,12 +846,12 @@ function App() {
 
             <div style={{ position: "relative" }}>
               <Editor
+                loading={editorLoadingPlaceholder}
                 height={`calc(100vh - ${
-                  headerContainerHeight +
-                  footerContainerHeight -
-                  20
+                  headerContainerHeight + footerContainerHeight - 20
                 }px)`}
-                theme={darkTheme ? "vs-dark" : "vs"}
+                theme={activeThemeName}
+                beforeMount={defineEditorThemes}
                 path="file:///gzip-decompress/input.txt"
                 value={editorData}
                 onChange={(value) => {
@@ -885,38 +871,19 @@ function App() {
                   isWholeLine: true,
                 }}
               />
-
-              {/* INPUT LABEL */}
-
-              {/* <div
-                style={{
-                  position: "absolute",
-                  top: "8px",
-                  left: "12px",
-                  padding: "3px 8px",
-                  background: "#0f766e",
-                  color: "white",
-                  borderRadius: "4px",
-                  fontSize: "11px",
-                  zIndex: 5,
-                  opacity: 0.9,
-                }}
-              >
-                Base64 GZip Input
-              </div> */}
             </div>
 
             {/* OUTPUT */}
 
             <div style={{ position: "relative" }}>
               <Editor
+                loading={editorLoadingPlaceholder}
                 height={`calc(100vh - ${
-                  headerContainerHeight +
-                  footerContainerHeight -
-                  20
+                  headerContainerHeight + footerContainerHeight - 20
                 }px)`}
                 width="100%"
-                theme={darkTheme ? "vs-dark" : "vs"}
+                theme={activeThemeName}
+                beforeMount={defineEditorThemes}
                 path="file:///gzip-decompress/result.txt"
                 value={resultData || ""}
                 onMount={onMountResultEditor}
@@ -935,25 +902,6 @@ function App() {
                   isWholeLine: true,
                 }}
               />
-
-              {/* OUTPUT LABEL */}
-
-              {/* <div
-                style={{
-                  position: "absolute",
-                  top: "8px",
-                  left: "12px",
-                  padding: "3px 8px",
-                  background: "#0f9d78",
-                  color: "white",
-                  borderRadius: "4px",
-                  fontSize: "11px",
-                  zIndex: 5,
-                  opacity: 0.9,
-                }}
-              >
-                Decompressed Output
-              </div> */}
 
               {/* ERROR */}
 
@@ -1021,10 +969,7 @@ function App() {
                     style={{ display: "none" }}
                   />
 
-                  <ToolBtn
-                    as="span"
-                    style={{ cursor: "pointer" }}
-                  >
+                  <ToolBtn as="span" style={{ cursor: "pointer" }}>
                     <IoMdDownload
                       style={{
                         transform: "rotate(180deg)",
@@ -1043,11 +988,7 @@ function App() {
 
                 {/* History */}
 
-                <ToolBtn
-                  onClick={() =>
-                    setIsHistoryOpen(true)
-                  }
-                >
+                <ToolBtn onClick={() => setIsHistoryOpen(true)}>
                   <MdHistory />
                   History
                 </ToolBtn>
@@ -1055,12 +996,7 @@ function App() {
                 {/* Download */}
 
                 <ToolBtn
-                  onClick={() =>
-                    download(
-                      "decompressed.txt",
-                      resultData
-                    )
-                  }
+                  onClick={() => download("decompressed.txt", resultData)}
                   disabled={!resultData}
                 >
                   <IoMdDownload />
@@ -1085,12 +1021,7 @@ function App() {
                   {/* Download result */}
 
                   <ToolBtn
-                    onClick={() =>
-                      download(
-                        "decompressed.txt",
-                        resultData
-                      )
-                    }
+                    onClick={() => download("decompressed.txt", resultData)}
                     disabled={!resultData}
                   >
                     <IoMdDownload />
@@ -1101,9 +1032,7 @@ function App() {
 
                   <CopyToClipboard
                     text={resultData || ""}
-                    onCopy={() =>
-                      setCopyResButtonTitle("Copied")
-                    }
+                    onCopy={() => setCopyResButtonTitle("Copied")}
                   >
                     <ToolBtn disabled={!resultData}>
                       <IoCopyOutline />
@@ -1136,17 +1065,11 @@ function App() {
                 fontSize: "10px",
               }}
             >
-              {HOME_NAV_LINKS.map(
-                ({ href, label }) => (
-                  <Link
-                    className="menu-item"
-                    href={href}
-                    key={href}
-                  >
-                    {label}
-                  </Link>
-                )
-              )}
+              {HOME_NAV_LINKS.map(({ href, label }) => (
+                <Link className="menu-item" href={href} key={href}>
+                  {label}
+                </Link>
+              ))}
             </div>
           </div>
         </BottomContainer>
@@ -1156,16 +1079,12 @@ function App() {
         {isHistoryOpen && (
           <HistoryOverlay
             role="presentation"
-            onClick={() =>
-              setIsHistoryOpen(false)
-            }
+            onClick={() => setIsHistoryOpen(false)}
           >
             <HistoryModal
               role="dialog"
               aria-modal="true"
-              onClick={(event) =>
-                event.stopPropagation()
-              }
+              onClick={(event) => event.stopPropagation()}
             >
               <HistoryModalHeader>
                 <h2>GZip Decompression History</h2>
@@ -1173,9 +1092,7 @@ function App() {
                 <button
                   type="button"
                   aria-label="Close history"
-                  onClick={() =>
-                    setIsHistoryOpen(false)
-                  }
+                  onClick={() => setIsHistoryOpen(false)}
                 >
                   <IoMdClose />
                 </button>
@@ -1197,37 +1114,23 @@ function App() {
                     <div
                       className="card-content"
                       title={item.input}
-                      onClick={() =>
-                        restoreHistory(item)
-                      }
+                      onClick={() => restoreHistory(item)}
                     >
-                      <span className="timestamp">
-                        {item.time}
+                      <span className="timestamp">{item.time}</span>
+
+                      <span className="preview">
+                        Input: {item.input.substring(0, 120)}
                       </span>
 
                       <span className="preview">
-                        Input:{" "}
-                        {item.input.substring(
-                          0,
-                          120
-                        )}
-                      </span>
-
-                      <span className="preview">
-                        Output:{" "}
-                        {item.output.substring(
-                          0,
-                          300
-                        )}
+                        Output: {item.output.substring(0, 300)}
                       </span>
                     </div>
 
                     <button
                       className="card-delete"
                       type="button"
-                      onClick={() =>
-                        deleteHistory(item.id)
-                      }
+                      onClick={() => deleteHistory(item.id)}
                     >
                       Delete
                     </button>
@@ -1242,112 +1145,71 @@ function App() {
 
         <HomeSeoSection>
           <div className="content">
-            <h2>
-              Free Online GZip Decompressor
-            </h2>
+            <h2>Free Online GZip Decompressor</h2>
 
             <p>
-              GZip Decompressor is a free online tool
-              for decompressing GZip data directly in
-              your browser. Paste Base64-encoded GZip
-              data or upload a GZip file to instantly
-              extract the original content.
+              GZip Decompressor is a free online tool for decompressing GZip
+              data directly in your browser. Paste Base64-encoded GZip data
+              or upload a GZip file to instantly extract the original
+              content.
             </p>
 
             <p>
-              The tool is useful for developers working
-              with compressed API responses, server
-              logs, backups, HTTP payloads, and other
+              The tool is useful for developers working with compressed API
+              responses, server logs, backups, HTTP payloads, and other
               GZip-compressed data.
             </p>
 
             <div className="link-row">
-              {HOME_NAV_LINKS.map(
-                ({ href, label }) => (
-                  <Link href={href} key={href}>
-                    {label}
-                  </Link>
-                )
-              )}
+              {HOME_NAV_LINKS.map(({ href, label }) => (
+                <Link href={href} key={href}>
+                  {label}
+                </Link>
+              ))}
             </div>
 
-            <h3>
-              Why use this GZip Decompressor?
-            </h3>
+            <h3>Why use this GZip Decompressor?</h3>
 
             <ul>
-              <li>
-                Decompress GZip data directly in your
-                browser.
-              </li>
+              <li>Decompress GZip data directly in your browser.</li>
 
-              <li>
-                Upload .gz files and extract their
-                contents.
-              </li>
+              <li>Upload .gz files and extract their contents.</li>
 
-              <li>
-                Paste Base64-encoded GZip data for
-                instant decompression.
-              </li>
+              <li>Paste Base64-encoded GZip data for instant decompression.</li>
 
-              <li>
-                Copy or download the decompressed
-                result.
-              </li>
+              <li>Copy or download the decompressed result.</li>
 
-              <li>
-                No server-side processing is required
-                for decompression.
-              </li>
+              <li>No server-side processing is required for decompression.</li>
             </ul>
 
-            <h3>
-              Common Questions
-            </h3>
+            <h3>Common Questions</h3>
 
-            <h4>
-              What is GZip?
-            </h4>
+            <h4>What is GZip?</h4>
 
             <p>
-              GZip is a compression format commonly used
-              to reduce the size of files and data before
-              transmission or storage. It is frequently
-              used for web content, logs, and server-side
-              data.
+              GZip is a compression format commonly used to reduce the size
+              of files and data before transmission or storage. It is
+              frequently used for web content, logs, and server-side data.
             </p>
 
-            <h4>
-              How do I decompress GZip data?
-            </h4>
+            <h4>How do I decompress GZip data?</h4>
 
             <p>
-              Paste Base64-encoded GZip data into the
-              input editor or upload a .gz file. The tool
-              automatically decompresses the data and
-              displays the original content in the output
-              editor.
+              Paste Base64-encoded GZip data into the input editor or upload
+              a .gz file. The tool automatically decompresses the data and
+              displays the original content in the output editor.
             </p>
 
-            <h4>
-              Can I upload a GZip file?
-            </h4>
+            <h4>Can I upload a GZip file?</h4>
 
             <p>
-              Yes. Use the Upload GZip button to select
-              a .gz file from your computer. The file is
-              decompressed directly in your browser.
+              Yes. Use the Upload GZip button to select a .gz file from your
+              computer. The file is decompressed directly in your browser.
             </p>
 
-            <h4>
-              Is this GZip decompressor free?
-            </h4>
+            <h4>Is this GZip decompressor free?</h4>
 
-            <p>
-              Yes. The GZip Decompressor is free to use
-              online.
-            </p>
+            <p>Yes. The GZip Decompressor is free to use online.</p>
           </div>
         </HomeSeoSection>
       </main>

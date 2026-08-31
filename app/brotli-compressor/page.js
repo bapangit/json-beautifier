@@ -1,20 +1,13 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
 import CopyToClipboard from "react-copy-to-clipboard";
-import {
-  IoMdClose,
-  IoMdMoon,
-  IoMdDownload,
-} from "react-icons/io";
-import {
-  MdHistory,
-  MdOutlineContentPaste,
-} from "react-icons/md";
+import { IoMdClose, IoMdMoon, IoMdDownload } from "react-icons/io";
+import { MdHistory, MdOutlineContentPaste } from "react-icons/md";
 import { AiOutlineDelete } from "react-icons/ai";
 import { IoSearch, IoCopyOutline } from "react-icons/io5";
 import { LuMoveHorizontal } from "react-icons/lu";
@@ -27,6 +20,9 @@ import brotliPromise from "brotli-wasm";
 const headerContainerHeight = 70;
 const footerContainerHeight = 80;
 
+const THEME_STORAGE_KEY = "brotli-compressor-theme";
+const HISTORY_STORAGE_KEY = "brotli-compressor-history";
+
 const HOME_NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/blog", label: "Blog" },
@@ -34,6 +30,40 @@ const HOME_NAV_LINKS = [
   { href: "/contact", label: "Contact" },
   { href: "/privacy-policy", label: "Privacy Policy" },
 ];
+
+/*
+ * Read the saved theme synchronously (client only).
+ */
+function getStoredIsDark() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) === "dark";
+  } catch {
+    return false;
+  }
+}
+
+/*
+ * Define both Monaco themes once, before either editor
+ * mounts, so the `theme` prop is correct on first paint
+ * instead of being switched right after mount.
+ */
+function defineEditorThemes(monacoInstance) {
+  monacoInstance.editor.defineTheme("myThemeDark", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {},
+  });
+
+  monacoInstance.editor.defineTheme("myThemeLight", {
+    base: "vs",
+    inherit: true,
+    rules: [],
+    colors: {},
+  });
+}
 
 const HeaderContainer = styled.div`
   width: 100%;
@@ -200,12 +230,9 @@ const ToolBtn = styled.button`
   gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
-  border: 1px solid ${(p) =>
-    p.$primary ? "#0f9d78" : "#e2e8f0"};
-  background: ${(p) =>
-    p.$primary ? "#0f9d78" : "#ffffff"};
-  color: ${(p) =>
-    p.$primary ? "#ffffff" : "#334155"};
+  border: 1px solid ${(p) => (p.$primary ? "#0f9d78" : "#e2e8f0")};
+  background: ${(p) => (p.$primary ? "#0f9d78" : "#ffffff")};
+  color: ${(p) => (p.$primary ? "#ffffff" : "#334155")};
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -213,10 +240,8 @@ const ToolBtn = styled.button`
   transition: background 0.15s ease, border-color 0.15s ease;
 
   &:hover {
-    background: ${(p) =>
-      p.$primary ? "#0c8a67" : "#f1f5f9"};
-    border-color: ${(p) =>
-      p.$primary ? "#0c8a67" : "#cbd5e1"};
+    background: ${(p) => (p.$primary ? "#0c8a67" : "#f1f5f9")};
+    border-color: ${(p) => (p.$primary ? "#0c8a67" : "#cbd5e1")};
   }
 
   &:active {
@@ -361,6 +386,11 @@ function App() {
   const [resultData, setResultData] = useState("");
   const [error, setError] = useState("");
 
+  /*
+   * Starts false (SSR-safe); the useLayoutEffect below
+   * corrects it before the browser paints, avoiding the
+   * visible flash you were seeing.
+   */
   const [darkTheme, setDarkTheme] = useState(false);
   const [fontSize, setFontSize] = useState(14);
 
@@ -370,8 +400,16 @@ function App() {
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
 
-  const [copyResButtonTitle, setCopyResButtonTitle] =
-    useState("Copy");
+  const [copyResButtonTitle, setCopyResButtonTitle] = useState("Copy");
+
+  /*
+   * Apply the saved theme before the browser paints —
+   * useLayoutEffect (not useEffect) is what removes the
+   * extra visible frame at the wrong theme.
+   */
+  useLayoutEffect(() => {
+    setDarkTheme(getStoredIsDark());
+  }, []);
 
   /*
    * Convert Uint8Array to Base64.
@@ -381,19 +419,9 @@ function App() {
 
     const chunkSize = 0x8000;
 
-    for (
-      let i = 0;
-      i < bytes.length;
-      i += chunkSize
-    ) {
+    for (let i = 0; i < bytes.length; i += chunkSize) {
       binary += String.fromCharCode(
-        ...bytes.subarray(
-          i,
-          Math.min(
-            i + chunkSize,
-            bytes.length
-          )
-        )
+        ...bytes.subarray(i, Math.min(i + chunkSize, bytes.length)),
       );
     }
 
@@ -418,50 +446,35 @@ function App() {
       /*
        * Convert text to UTF-8 bytes.
        */
-      const encoder =
-        new TextEncoder();
+      const encoder = new TextEncoder();
 
-      const inputData =
-        encoder.encode(text);
+      const inputData = encoder.encode(text);
 
       /*
        * Compress using Brotli.
        */
-      const compressedData =
-        brotli.compress(inputData);
+      const compressedData = brotli.compress(inputData);
 
       /*
        * Convert compressed binary
        * to Base64 for display/copy.
        */
-      const base64 =
-        uint8ArrayToBase64(
-          compressedData
-        );
+      const base64 = uint8ArrayToBase64(compressedData);
 
       setResultData(base64);
 
-      saveToHistory(
-        text,
-        base64
-      );
+      saveToHistory(text, base64);
     } catch (err) {
       setResultData("");
 
-      setError(
-        err?.message ||
-          "Unable to compress the input using Brotli."
-      );
+      setError(err?.message || "Unable to compress the input using Brotli.");
     }
   };
 
   /*
    * Save compression history.
    */
-  const saveToHistory = (
-    input,
-    output
-  ) => {
+  const saveToHistory = (input, output) => {
     if (!input || !output) return;
 
     const item = {
@@ -472,16 +485,10 @@ function App() {
     };
 
     setHistory((previous) => {
-      const updated = [
-        item,
-        ...previous,
-      ].slice(0, 20);
+      const updated = [item, ...previous].slice(0, 20);
 
       try {
-        localStorage.setItem(
-          "brotli-compressor-history",
-          JSON.stringify(updated)
-        );
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
       } catch {}
 
       return updated;
@@ -493,15 +500,10 @@ function App() {
    */
   useEffect(() => {
     try {
-      const saved =
-        localStorage.getItem(
-          "brotli-compressor-history"
-        );
+      const saved = localStorage.getItem(HISTORY_STORAGE_KEY);
 
       if (saved) {
-        setHistory(
-          JSON.parse(saved)
-        );
+        setHistory(JSON.parse(saved));
       }
     } catch {}
   }, []);
@@ -511,55 +513,41 @@ function App() {
    */
   const onClickPaste = async () => {
     try {
-      const text =
-        await navigator.clipboard.readText();
+      const text = await navigator.clipboard.readText();
 
       if (text) {
         setEditorData(text);
         await compressBrotli(text);
       }
     } catch {
-      setError(
-        "Unable to read clipboard."
-      );
+      setError("Unable to read clipboard.");
     }
   };
 
   /*
    * Upload a text file.
    */
-  const handleFileUpload = async (
-    event
-  ) => {
-    const file =
-      event.target.files?.[0];
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
 
     if (!file) return;
 
     try {
       setError("");
 
-      const text =
-        await file.text();
+      const text = await file.text();
 
       if (!text.trim()) {
-        throw new Error(
-          "The selected file is empty."
-        );
+        throw new Error("The selected file is empty.");
       }
 
       setEditorData(text);
 
-      await compressBrotli(
-        text
-      );
+      await compressBrotli(text);
     } catch (err) {
       setResultData("");
 
-      setError(
-        err?.message ||
-          "Unable to read the selected file."
-      );
+      setError(err?.message || "Unable to read the selected file.");
     }
 
     event.target.value = "";
@@ -577,38 +565,25 @@ function App() {
   /*
    * Download result.
    */
-  const download = (
-    filename,
-    text
-  ) => {
+  const download = (filename, text) => {
     if (!text) return;
 
-    const blob = new Blob(
-      [text],
-      {
-        type: "text/plain;charset=utf-8;",
-      }
-    );
+    const blob = new Blob([text], {
+      type: "text/plain;charset=utf-8;",
+    });
 
-    const url =
-      URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
 
-    const element =
-      document.createElement("a");
+    const element = document.createElement("a");
 
     element.href = url;
-    element.download =
-      filename;
+    element.download = filename;
 
-    document.body.appendChild(
-      element
-    );
+    document.body.appendChild(element);
 
     element.click();
 
-    document.body.removeChild(
-      element
-    );
+    document.body.removeChild(element);
 
     URL.revokeObjectURL(url);
   };
@@ -617,24 +592,15 @@ function App() {
    * Copy status.
    */
   useEffect(() => {
-    if (
-      copyResButtonTitle ===
-      "Copy"
-    ) {
+    if (copyResButtonTitle === "Copy") {
       return;
     }
 
-    const timer = setTimeout(
-      () => {
-        setCopyResButtonTitle(
-          "Copy"
-        );
-      },
-      2000
-    );
+    const timer = setTimeout(() => {
+      setCopyResButtonTitle("Copy");
+    }, 2000);
 
-    return () =>
-      clearTimeout(timer);
+    return () => clearTimeout(timer);
   }, [copyResButtonTitle]);
 
   /*
@@ -647,101 +613,37 @@ function App() {
       return;
     }
 
-    const timer = setTimeout(
-      () => {
-        compressBrotli(
-          editorData
-        );
-      },
-      500
-    );
+    const timer = setTimeout(() => {
+      compressBrotli(editorData);
+    }, 500);
 
-    return () =>
-      clearTimeout(timer);
+    return () => clearTimeout(timer);
   }, [editorData]);
 
   /*
-   * Theme.
+   * Theme toggle. Themes are already defined via
+   * `beforeMount`, so this just flips which is active.
    */
-  const setTheme = (
-    isDark
-  ) => {
+  const setTheme = (isDark) => {
     if (monaco) {
-      monaco.editor.setTheme(
-        isDark
-          ? "myThemeDark"
-          : "myThemeLight"
-      );
+      monaco.editor.setTheme(isDark ? "myThemeDark" : "myThemeLight");
     }
 
     setDarkTheme(isDark);
 
     try {
-      localStorage.setItem(
-        "brotli-compressor-theme",
-        isDark
-          ? "dark"
-          : "light"
-      );
+      localStorage.setItem(THEME_STORAGE_KEY, isDark ? "dark" : "light");
     } catch {}
   };
 
   /*
-   * Load theme.
+   * Monaco mount — themes are already defined by
+   * `beforeMount` and the correct one is already active
+   * via the `theme` prop, so this only captures instances.
    */
-  useEffect(() => {
-    try {
-      const theme =
-        localStorage.getItem(
-          "brotli-compressor-theme"
-        );
-
-      if (theme === "dark") {
-        setDarkTheme(true);
-      }
-    } catch {}
-  }, []);
-
-  /*
-   * Monaco mount.
-   */
-  const onMountResultEditor = (
-    editorInstance,
-    monacoInstance
-  ) => {
-    monacoInstance.editor.defineTheme(
-      "myThemeDark",
-      {
-        base: "vs-dark",
-        inherit: true,
-        rules: [],
-        colors: {},
-      }
-    );
-
-    monacoInstance.editor.defineTheme(
-      "myThemeLight",
-      {
-        base: "vs",
-        inherit: true,
-        rules: [],
-        colors: {},
-      }
-    );
-
-    monacoInstance.editor.setTheme(
-      darkTheme
-        ? "myThemeDark"
-        : "myThemeLight"
-    );
-
-    setEditor(
-      editorInstance
-    );
-
-    setMonaco(
-      monacoInstance
-    );
+  const onMountResultEditor = (editorInstance, monacoInstance) => {
+    setEditor(editorInstance);
+    setMonaco(monacoInstance);
   };
 
   /*
@@ -749,58 +651,54 @@ function App() {
    */
   const findWord = () => {
     if (editor) {
-      editor
-        .getAction(
-          "actions.find"
-        )
-        ?.run();
+      editor.getAction("actions.find")?.run();
     }
   };
 
   /*
    * Restore history.
    */
-  const restoreHistory = (
-    item
-  ) => {
-    setEditorData(
-      item.input
-    );
+  const restoreHistory = (item) => {
+    setEditorData(item.input);
 
-    setResultData(
-      item.output
-    );
+    setResultData(item.output);
 
     setError("");
 
-    setIsHistoryOpen(
-      false
-    );
+    setIsHistoryOpen(false);
   };
 
   /*
    * Delete history.
    */
-  const deleteHistory = (
-    id
-  ) => {
+  const deleteHistory = (id) => {
     setHistory((previous) => {
-      const updated =
-        previous.filter(
-          (item) =>
-            item.id !== id
-        );
+      const updated = previous.filter((item) => item.id !== id);
 
       try {
-        localStorage.setItem(
-          "brotli-compressor-history",
-          JSON.stringify(updated)
-        );
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
       } catch {}
 
       return updated;
     });
   };
+
+  const activeThemeName = darkTheme ? "myThemeDark" : "myThemeLight";
+
+  /*
+   * Placeholder shown while Monaco's script/worker loads,
+   * matching the current theme's background instead of
+   * being left blank.
+   */
+  const editorLoadingPlaceholder = (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        background: darkTheme ? "#1e1e1e" : "#ffffff",
+      }}
+    />
+  );
 
   return (
     <>
@@ -815,9 +713,7 @@ function App() {
 
         <HeaderContainer>
           <div className="brand-nav">
-            <h1 className="brand-title">
-              Brotli Compressor
-            </h1>
+            <h1 className="brand-title">Brotli Compressor</h1>
           </div>
 
           <div
@@ -847,20 +743,12 @@ function App() {
                   fontSize: "16px",
                   cursor: "pointer",
                 }}
-                onClick={() =>
-                  setFontSize(
-                    fontSize > 5
-                      ? fontSize - 1
-                      : 5
-                  )
-                }
+                onClick={() => setFontSize(fontSize > 5 ? fontSize - 1 : 5)}
               >
                 -
               </button>
 
-              <Button
-                title={fontSize}
-              />
+              <Button title={fontSize} />
 
               <button
                 type="button"
@@ -872,11 +760,7 @@ function App() {
                   fontSize: "16px",
                   cursor: "pointer",
                 }}
-                onClick={() =>
-                  setFontSize(
-                    fontSize + 1
-                  )
-                }
+                onClick={() => setFontSize(fontSize + 1)}
               >
                 +
               </button>
@@ -894,15 +778,11 @@ function App() {
             >
               <div
                 style={{
-                  color: darkTheme
-                    ? "grey"
-                    : "#FDB813",
+                  color: darkTheme ? "grey" : "#FDB813",
                   fontSize: "22px",
                   cursor: "pointer",
                 }}
-                onClick={() =>
-                  setTheme(false)
-                }
+                onClick={() => setTheme(false)}
               >
                 &#9728;
               </div>
@@ -917,25 +797,15 @@ function App() {
                   checkedIcon={false}
                   uncheckedIcon={false}
                   height={24}
-                  onChange={
-                    setTheme
-                  }
-                  checked={
-                    darkTheme
-                  }
+                  onChange={setTheme}
+                  checked={darkTheme}
                 />
               </div>
 
               <IoMdMoon
-                color={
-                  darkTheme
-                    ? "#FDB813"
-                    : "grey"
-                }
+                color={darkTheme ? "#FDB813" : "grey"}
                 fontSize={20}
-                onClick={() =>
-                  setTheme(true)
-                }
+                onClick={() => setTheme(true)}
                 style={{
                   cursor: "pointer",
                 }}
@@ -956,19 +826,13 @@ function App() {
             split="vertical"
             style={{
               height: `calc(100vh - ${
-                headerContainerHeight +
-                footerContainerHeight -
-                20
+                headerContainerHeight + footerContainerHeight - 20
               }px)`,
               width: "100%",
-              borderLeft:
-                "14px solid #adddd7",
-              borderRight:
-                "14px solid #adddd7",
-              borderBottom:
-                "14px solid #adddd7",
-              boxShadow:
-                "0 0 10px #5eead4",
+              borderLeft: "14px solid #adddd7",
+              borderRight: "14px solid #adddd7",
+              borderBottom: "14px solid #adddd7",
+              boxShadow: "0 0 10px #5eead4",
             }}
           >
             {/* TEXT INPUT */}
@@ -979,26 +843,16 @@ function App() {
               }}
             >
               <Editor
+                loading={editorLoadingPlaceholder}
                 height={`calc(100vh - ${
-                  headerContainerHeight +
-                  footerContainerHeight -
-                  20
+                  headerContainerHeight + footerContainerHeight - 20
                 }px)`}
-                theme={
-                  darkTheme
-                    ? "vs-dark"
-                    : "vs"
-                }
+                theme={activeThemeName}
+                beforeMount={defineEditorThemes}
                 path="file:///brotli-compressor/input.txt"
-                value={
-                  editorData
-                }
-                onChange={(
-                  value
-                ) => {
-                  setEditorData(
-                    value || ""
-                  );
+                value={editorData}
+                onChange={(value) => {
+                  setEditorData(value || "");
                 }}
                 language="plaintext"
                 options={{
@@ -1012,8 +866,7 @@ function App() {
                     handleMouseWheel: true,
                     alwaysConsumeMouseWheel: true,
                   },
-                  renderLineHighlight:
-                    "none",
+                  renderLineHighlight: "none",
                   isWholeLine: true,
                 }}
               />
@@ -1027,24 +880,16 @@ function App() {
               }}
             >
               <Editor
+                loading={editorLoadingPlaceholder}
                 height={`calc(100vh - ${
-                  headerContainerHeight +
-                  footerContainerHeight -
-                  20
+                  headerContainerHeight + footerContainerHeight - 20
                 }px)`}
                 width="100%"
-                theme={
-                  darkTheme
-                    ? "vs-dark"
-                    : "vs"
-                }
+                theme={activeThemeName}
+                beforeMount={defineEditorThemes}
                 path="file:///brotli-compressor/result.txt"
-                value={
-                  resultData || ""
-                }
-                onMount={
-                  onMountResultEditor
-                }
+                value={resultData || ""}
+                onMount={onMountResultEditor}
                 language="plaintext"
                 options={{
                   readOnly: false,
@@ -1058,8 +903,7 @@ function App() {
                     handleMouseWheel: true,
                     alwaysConsumeMouseWheel: true,
                   },
-                  renderLineHighlight:
-                    "none",
+                  renderLineHighlight: "none",
                   isWholeLine: true,
                 }}
               />
@@ -1069,23 +913,16 @@ function App() {
               {error && (
                 <div
                   style={{
-                    position:
-                      "absolute",
+                    position: "absolute",
                     left: "12px",
                     right: "12px",
                     bottom: "12px",
-                    padding:
-                      "10px 12px",
-                    background:
-                      "#fee2e2",
-                    color:
-                      "#991b1b",
-                    border:
-                      "1px solid #fecaca",
-                    borderRadius:
-                      "6px",
-                    fontSize:
-                      "13px",
+                    padding: "10px 12px",
+                    background: "#fee2e2",
+                    color: "#991b1b",
+                    border: "1px solid #fecaca",
+                    borderRadius: "6px",
+                    fontSize: "13px",
                     zIndex: 5,
                   }}
                 >
@@ -1104,27 +941,21 @@ function App() {
               display: "flex",
               position: "relative",
               height: `calc(100vh - ${footerContainerHeight}px)`,
-              borderTop:
-                "1px solid darkgrey",
+              borderTop: "1px solid darkgrey",
             }}
           >
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
-                backgroundColor:
-                  "#f1f5f9",
+                backgroundColor: "#f1f5f9",
                 width: "100%",
               }}
             >
               <ToolBar>
                 {/* PASTE */}
 
-                <ToolBtn
-                  onClick={
-                    onClickPaste
-                  }
-                >
+                <ToolBtn onClick={onClickPaste}>
                   <MdOutlineContentPaste />
                   Paste
                 </ToolBtn>
@@ -1133,33 +964,27 @@ function App() {
 
                 <label
                   style={{
-                    display:
-                      "inline-flex",
+                    display: "inline-flex",
                   }}
                 >
                   <input
                     type="file"
                     accept=".txt,.json,.xml,.csv,.html,.css,.js"
-                    onChange={
-                      handleFileUpload
-                    }
+                    onChange={handleFileUpload}
                     style={{
-                      display:
-                        "none",
+                      display: "none",
                     }}
                   />
 
                   <ToolBtn
                     as="span"
                     style={{
-                      cursor:
-                        "pointer",
+                      cursor: "pointer",
                     }}
                   >
                     <IoMdDownload
                       style={{
-                        transform:
-                          "rotate(180deg)",
+                        transform: "rotate(180deg)",
                       }}
                     />
                     Upload File
@@ -1168,22 +993,14 @@ function App() {
 
                 {/* CLEAR */}
 
-                <ToolBtn
-                  onClick={clear}
-                >
+                <ToolBtn onClick={clear}>
                   <AiOutlineDelete />
                   Clear
                 </ToolBtn>
 
                 {/* HISTORY */}
 
-                <ToolBtn
-                  onClick={() =>
-                    setIsHistoryOpen(
-                      true
-                    )
-                  }
-                >
+                <ToolBtn onClick={() => setIsHistoryOpen(true)}>
                   <MdHistory />
                   History
                 </ToolBtn>
@@ -1191,15 +1008,8 @@ function App() {
                 {/* DOWNLOAD */}
 
                 <ToolBtn
-                  onClick={() =>
-                    download(
-                      "compressed.br.base64.txt",
-                      resultData
-                    )
-                  }
-                  disabled={
-                    !resultData
-                  }
+                  onClick={() => download("compressed.br.base64.txt", resultData)}
+                  disabled={!resultData}
                 >
                   <IoMdDownload />
                   Download
@@ -1209,17 +1019,11 @@ function App() {
 
                 <ToolBtn
                   onClick={() => {
-                    if (
-                      resultData
-                    ) {
-                      setEditorData(
-                        resultData
-                      );
+                    if (resultData) {
+                      setEditorData(resultData);
                     }
                   }}
-                  disabled={
-                    !resultData
-                  }
+                  disabled={!resultData}
                 >
                   <LuMoveHorizontal />
                   Paste Result
@@ -1229,15 +1033,8 @@ function App() {
                   {/* DOWNLOAD RESULT */}
 
                   <ToolBtn
-                    onClick={() =>
-                      download(
-                        "compressed.br.base64.txt",
-                        resultData
-                      )
-                    }
-                    disabled={
-                      !resultData
-                    }
+                    onClick={() => download("compressed.br.base64.txt", resultData)}
+                    disabled={!resultData}
                   >
                     <IoMdDownload />
                     Download Result
@@ -1246,25 +1043,12 @@ function App() {
                   {/* COPY */}
 
                   <CopyToClipboard
-                    text={
-                      resultData ||
-                      ""
-                    }
-                    onCopy={() =>
-                      setCopyResButtonTitle(
-                        "Copied"
-                      )
-                    }
+                    text={resultData || ""}
+                    onCopy={() => setCopyResButtonTitle("Copied")}
                   >
-                    <ToolBtn
-                      disabled={
-                        !resultData
-                      }
-                    >
+                    <ToolBtn disabled={!resultData}>
                       <IoCopyOutline />
-                      {
-                        copyResButtonTitle
-                      }
+                      {copyResButtonTitle}
                     </ToolBtn>
                   </CopyToClipboard>
 
@@ -1272,11 +1056,7 @@ function App() {
 
                   {/* SEARCH */}
 
-                  <ToolBtn
-                    onClick={
-                      findWord
-                    }
-                  >
+                  <ToolBtn onClick={findWord}>
                     <IoSearch />
                     Search
                   </ToolBtn>
@@ -1290,32 +1070,18 @@ function App() {
           <div className="menu-container">
             <div
               style={{
-                position:
-                  "absolute",
+                position: "absolute",
                 right: "10px",
                 bottom: "2px",
                 display: "flex",
                 fontSize: "10px",
               }}
             >
-              {HOME_NAV_LINKS.map(
-                ({
-                  href,
-                  label,
-                }) => (
-                  <Link
-                    className="menu-item"
-                    href={
-                      href
-                    }
-                    key={
-                      href
-                    }
-                  >
-                    {label}
-                  </Link>
-                )
-              )}
+              {HOME_NAV_LINKS.map(({ href, label }) => (
+                <Link className="menu-item" href={href} key={href}>
+                  {label}
+                </Link>
+              ))}
             </div>
           </div>
         </BottomContainer>
@@ -1325,109 +1091,63 @@ function App() {
         {isHistoryOpen && (
           <HistoryOverlay
             role="presentation"
-            onClick={() =>
-              setIsHistoryOpen(
-                false
-              )
-            }
+            onClick={() => setIsHistoryOpen(false)}
           >
             <HistoryModal
               role="dialog"
               aria-modal="true"
-              onClick={(
-                event
-              ) =>
-                event.stopPropagation()
-              }
+              onClick={(event) => event.stopPropagation()}
             >
               <HistoryModalHeader>
-                <h2>
-                  Brotli Compressor History
-                </h2>
+                <h2>Brotli Compressor History</h2>
 
                 <button
                   type="button"
                   aria-label="Close history"
-                  onClick={() =>
-                    setIsHistoryOpen(
-                      false
-                    )
-                  }
+                  onClick={() => setIsHistoryOpen(false)}
                 >
                   <IoMdClose />
                 </button>
               </HistoryModalHeader>
 
               <HistoryCards>
-                {history.length ===
-                  0 && (
+                {history.length === 0 && (
                   <div
                     style={{
-                      color:
-                        "#94a3b8",
+                      color: "#94a3b8",
                     }}
                   >
                     No saved history
                   </div>
                 )}
 
-                {history.map(
-                  (
-                    item
-                  ) => (
-                    <HistoryCard
-                      key={
-                        item.id
-                      }
+                {history.map((item) => (
+                  <HistoryCard key={item.id}>
+                    <div
+                      className="card-content"
+                      title={item.input}
+                      onClick={() => restoreHistory(item)}
                     >
-                      <div
-                        className="card-content"
-                        title={
-                          item.input
-                        }
-                        onClick={() =>
-                          restoreHistory(
-                            item
-                          )
-                        }
-                      >
-                        <span className="timestamp">
-                          {
-                            item.time
-                          }
-                        </span>
+                      <span className="timestamp">{item.time}</span>
 
-                        <span className="preview">
-                          Input:{" "}
-                          {item.input.substring(
-                            0,
-                            150
-                          )}
-                        </span>
+                      <span className="preview">
+                        Input: {item.input.substring(0, 150)}
+                      </span>
 
-                        <span className="preview">
-                          Compressed:{" "}
-                          {item.output.substring(
-                            0,
-                            300
-                          )}
-                        </span>
-                      </div>
+                      <span className="preview">
+                        Compressed: {item.output.substring(0, 300)}
+                      </span>
+                    </div>
 
-                      <button
-                        className="card-delete"
-                        type="button"
-                        onClick={() =>
-                          deleteHistory(
-                            item.id
-                          )
-                        }
-                      >
-                        Delete
-                      </button>
-                    </HistoryCard>
-                  )
-                )}
+                    <button
+                      className="card-delete"
+                      type="button"
+                      onClick={() => deleteHistory(item.id)}
+                    >
+                      Delete
+                    </button>
+                  </HistoryCard>
+                ))}
               </HistoryCards>
             </HistoryModal>
           </HistoryOverlay>
@@ -1437,152 +1157,92 @@ function App() {
 
         <HomeSeoSection>
           <div className="content">
-            <h2>
-              Free Online Brotli Compressor
-            </h2>
+            <h2>Free Online Brotli Compressor</h2>
 
             <p>
-              Brotli Compressor is a free
-              online tool that compresses text
-              and data using the Brotli
-              compression algorithm directly
-              in your browser.
+              Brotli Compressor is a free online tool that compresses text
+              and data using the Brotli compression algorithm directly in
+              your browser.
             </p>
 
             <p>
-              Paste text into the input editor
-              or upload a text file to instantly
-              compress your content and generate
-              Base64-encoded Brotli data.
+              Paste text into the input editor or upload a text file to
+              instantly compress your content and generate Base64-encoded
+              Brotli data.
             </p>
 
             <div className="link-row">
-              {HOME_NAV_LINKS.map(
-                ({
-                  href,
-                  label,
-                }) => (
-                  <Link
-                    href={href}
-                    key={href}
-                  >
-                    {label}
-                  </Link>
-                )
-              )}
+              {HOME_NAV_LINKS.map(({ href, label }) => (
+                <Link href={href} key={href}>
+                  {label}
+                </Link>
+              ))}
             </div>
 
-            <h3>
-              Why use this Brotli Compressor?
-            </h3>
+            <h3>Why use this Brotli Compressor?</h3>
 
             <ul>
-              <li>
-                Compress text using Brotli
-                directly in your browser.
-              </li>
+              <li>Compress text using Brotli directly in your browser.</li>
 
-              <li>
-                Generate Base64-encoded Brotli
-                output.
-              </li>
+              <li>Generate Base64-encoded Brotli output.</li>
 
-              <li>
-                Upload text files for compression.
-              </li>
+              <li>Upload text files for compression.</li>
 
-              <li>
-                Copy compressed data with one
-                click.
-              </li>
+              <li>Copy compressed data with one click.</li>
 
-              <li>
-                Download compressed Brotli data.
-              </li>
+              <li>Download compressed Brotli data.</li>
 
-              <li>
-                View input and compressed output
-                side by side.
-              </li>
+              <li>View input and compressed output side by side.</li>
 
-              <li>
-                Keep recent compression history
-                in your browser.
-              </li>
+              <li>Keep recent compression history in your browser.</li>
 
-              <li>
-                Process your content locally in
-                the browser.
-              </li>
+              <li>Process your content locally in the browser.</li>
             </ul>
 
-            <h3>
-              Common Questions
-            </h3>
+            <h3>Common Questions</h3>
 
-            <h4>
-              What is a Brotli Compressor?
-            </h4>
+            <h4>What is a Brotli Compressor?</h4>
 
             <p>
-              A Brotli Compressor reduces the
-              size of text or other data using
-              the Brotli compression algorithm.
-              Brotli is commonly used for web
-              content and HTTP compression.
+              A Brotli Compressor reduces the size of text or other data
+              using the Brotli compression algorithm. Brotli is commonly
+              used for web content and HTTP compression.
             </p>
 
-            <h4>
-              How do I compress text with Brotli?
-            </h4>
+            <h4>How do I compress text with Brotli?</h4>
 
             <p>
-              Paste your text into the input
-              editor or upload a text file. The
-              tool automatically compresses the
-              content and displays the
+              Paste your text into the input editor or upload a text file.
+              The tool automatically compresses the content and displays the
               Base64-encoded Brotli result.
             </p>
 
-            <h4>
-              What format is the compressed output?
-            </h4>
+            <h4>What format is the compressed output?</h4>
 
             <p>
-              The compressed binary Brotli data
-              is converted to Base64 so it can be
-              safely displayed, copied, and
-              downloaded as text.
+              The compressed binary Brotli data is converted to Base64 so it
+              can be safely displayed, copied, and downloaded as text.
             </p>
 
-            <h4>
-              Can I compress JSON with Brotli?
-            </h4>
+            <h4>Can I compress JSON with Brotli?</h4>
 
             <p>
-              Yes. You can paste JSON into the
-              input editor and the complete JSON
-              text will be compressed using Brotli.
+              Yes. You can paste JSON into the input editor and the complete
+              JSON text will be compressed using Brotli.
             </p>
 
-            <h4>
-              Is this Brotli Compressor free?
-            </h4>
+            <h4>Is this Brotli Compressor free?</h4>
 
             <p>
-              Yes. The tool is free to use and
-              performs Brotli compression directly
-              in your browser.
+              Yes. The tool is free to use and performs Brotli compression
+              directly in your browser.
             </p>
 
-            <h4>
-              Is my data uploaded to a server?
-            </h4>
+            <h4>Is my data uploaded to a server?</h4>
 
             <p>
-              Compression is performed locally
-              in your browser, so the text does
-              not need to be uploaded to a server.
+              Compression is performed locally in your browser, so the text
+              does not need to be uploaded to a server.
             </p>
           </div>
         </HomeSeoSection>
