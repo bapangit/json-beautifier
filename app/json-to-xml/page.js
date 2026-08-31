@@ -1,16 +1,13 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
 import CopyToClipboard from "react-copy-to-clipboard";
 import { IoMdClose, IoMdMoon, IoMdDownload } from "react-icons/io";
-import {
-  MdHistory,
-  MdOutlineContentPaste,
-} from "react-icons/md";
+import { MdHistory, MdOutlineContentPaste } from "react-icons/md";
 import { AiOutlineDelete } from "react-icons/ai";
 import { IoSearch, IoCopyOutline } from "react-icons/io5";
 import { LuMoveHorizontal } from "react-icons/lu";
@@ -21,6 +18,9 @@ import Button from "@/Components/Buttons/Button";
 const headerContainerHeight = 70;
 const footerContainerHeight = 80;
 
+const THEME_STORAGE_KEY = "json-xml-theme";
+const HISTORY_STORAGE_KEY = "json-to-xml-history";
+
 const HOME_NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/blog", label: "Blog" },
@@ -28,6 +28,40 @@ const HOME_NAV_LINKS = [
   { href: "/contact", label: "Contact" },
   { href: "/privacy-policy", label: "Privacy Policy" },
 ];
+
+/*
+ * Read the saved theme synchronously (client only).
+ */
+function getStoredIsDark() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) === "dark";
+  } catch {
+    return false;
+  }
+}
+
+/*
+ * Define both Monaco themes once, before either editor
+ * mounts, so the `theme` prop is correct on first paint
+ * instead of being switched right after mount.
+ */
+function defineEditorThemes(monacoInstance) {
+  monacoInstance.editor.defineTheme("myThemeDark", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {},
+  });
+
+  monacoInstance.editor.defineTheme("myThemeLight", {
+    base: "vs",
+    inherit: true,
+    rules: [],
+    colors: {},
+  });
+}
 
 const HeaderContainer = styled.div`
   width: 100%;
@@ -194,12 +228,9 @@ const ToolBtn = styled.button`
   gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
-  border: 1px solid ${(p) =>
-    p.$primary ? "#0f9d78" : "#e2e8f0"};
-  background: ${(p) =>
-    p.$primary ? "#0f9d78" : "#ffffff"};
-  color: ${(p) =>
-    p.$primary ? "#ffffff" : "#334155"};
+  border: 1px solid ${(p) => (p.$primary ? "#0f9d78" : "#e2e8f0")};
+  background: ${(p) => (p.$primary ? "#0f9d78" : "#ffffff")};
+  color: ${(p) => (p.$primary ? "#ffffff" : "#334155")};
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -207,10 +238,8 @@ const ToolBtn = styled.button`
   transition: background 0.15s ease, border-color 0.15s ease;
 
   &:hover {
-    background: ${(p) =>
-      p.$primary ? "#0c8a67" : "#f1f5f9"};
-    border-color: ${(p) =>
-      p.$primary ? "#0c8a67" : "#cbd5e1"};
+    background: ${(p) => (p.$primary ? "#0c8a67" : "#f1f5f9")};
+    border-color: ${(p) => (p.$primary ? "#0c8a67" : "#cbd5e1")};
   }
 
   &:active {
@@ -354,6 +383,12 @@ function App() {
   const [editorData, setEditorData] = useState("");
   const [resultData, setResultData] = useState("");
   const [error, setError] = useState("");
+
+  /*
+   * Starts false (SSR-safe); the useLayoutEffect below
+   * corrects it before the browser paints, avoiding the
+   * visible flash you were seeing.
+   */
   const [darkTheme, setDarkTheme] = useState(false);
   const [fontSize, setFontSize] = useState(14);
 
@@ -363,8 +398,16 @@ function App() {
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
 
-  const [copyResButtonTitle, setCopyResButtonTitle] =
-    useState("Copy");
+  const [copyResButtonTitle, setCopyResButtonTitle] = useState("Copy");
+
+  /*
+   * Apply the saved theme before the browser paints —
+   * useLayoutEffect (not useEffect) is what removes the
+   * extra visible frame at the wrong theme.
+   */
+  useLayoutEffect(() => {
+    setDarkTheme(getStoredIsDark());
+  }, []);
 
   /*
    * Escape XML special characters.
@@ -382,21 +425,13 @@ function App() {
    * Check whether a value is a plain object.
    */
   const isObject = (value) => {
-    return (
-      value !== null &&
-      typeof value === "object" &&
-      !Array.isArray(value)
-    );
+    return value !== null && typeof value === "object" && !Array.isArray(value);
   };
 
   /*
    * Convert JSON value to XML.
    */
-  const jsonValueToXml = (
-    key,
-    value,
-    level = 0
-  ) => {
+  const jsonValueToXml = (key, value, level = 0) => {
     const indent = "  ".repeat(level);
     const childIndent = "  ".repeat(level + 1);
 
@@ -404,28 +439,14 @@ function App() {
      * Arrays become repeated XML elements.
      */
     if (Array.isArray(value)) {
-      return value
-        .map((item) =>
-          jsonValueToXml(
-            key,
-            item,
-            level
-          )
-        )
-        .join("\n");
+      return value.map((item) => jsonValueToXml(key, item, level)).join("\n");
     }
 
     /*
      * Primitive values.
      */
-    if (
-      value === null ||
-      typeof value !== "object"
-    ) {
-      const text =
-        value === null
-          ? ""
-          : escapeXml(value);
+    if (value === null || typeof value !== "object") {
+      const text = value === null ? "" : escapeXml(value);
 
       return `${indent}<${key}>${text}</${key}>`;
     }
@@ -437,82 +458,50 @@ function App() {
     let children = [];
     let textContent = null;
 
-    Object.entries(value).forEach(
-      ([childKey, childValue]) => {
-        /*
-         * Convert @attributes into XML attributes.
-         */
-        if (
-          childKey === "@attributes" &&
-          isObject(childValue)
-        ) {
-          Object.entries(childValue).forEach(
-            ([attributeName, attributeValue]) => {
-              attributes += ` ${attributeName}="${escapeXml(
-                attributeValue
-              )}"`;
-            }
-          );
+    Object.entries(value).forEach(([childKey, childValue]) => {
+      /*
+       * Convert @attributes into XML attributes.
+       */
+      if (childKey === "@attributes" && isObject(childValue)) {
+        Object.entries(childValue).forEach(([attributeName, attributeValue]) => {
+          attributes += ` ${attributeName}="${escapeXml(attributeValue)}"`;
+        });
 
-          return;
-        }
-
-        /*
-         * Convert #text into XML text.
-         */
-        if (childKey === "#text") {
-          textContent =
-            childValue === null
-              ? ""
-              : escapeXml(childValue);
-
-          return;
-        }
-
-        /*
-         * Normal child elements.
-         */
-        if (Array.isArray(childValue)) {
-          childValue.forEach(
-            (item) => {
-              children.push(
-                jsonValueToXml(
-                  childKey,
-                  item,
-                  level + 1
-                )
-              );
-            }
-          );
-        } else {
-          children.push(
-            jsonValueToXml(
-              childKey,
-              childValue,
-              level + 1
-            )
-          );
-        }
+        return;
       }
-    );
+
+      /*
+       * Convert #text into XML text.
+       */
+      if (childKey === "#text") {
+        textContent = childValue === null ? "" : escapeXml(childValue);
+
+        return;
+      }
+
+      /*
+       * Normal child elements.
+       */
+      if (Array.isArray(childValue)) {
+        childValue.forEach((item) => {
+          children.push(jsonValueToXml(childKey, item, level + 1));
+        });
+      } else {
+        children.push(jsonValueToXml(childKey, childValue, level + 1));
+      }
+    });
 
     /*
      * Empty object.
      */
-    if (
-      children.length === 0 &&
-      textContent === null
-    ) {
+    if (children.length === 0 && textContent === null) {
       return `${indent}<${key}${attributes} />`;
     }
 
     /*
      * Object containing only text.
      */
-    if (
-      children.length === 0 &&
-      textContent !== null
-    ) {
+    if (children.length === 0 && textContent !== null) {
       return `${indent}<${key}${attributes}>${textContent}</${key}>`;
     }
 
@@ -525,16 +514,12 @@ function App() {
     const content = [];
 
     if (textContent !== null) {
-      content.push(
-        `${childIndent}${textContent}`
-      );
+      content.push(`${childIndent}${textContent}`);
     }
 
     content.push(...children);
 
-    return `${openingTag}\n${content.join(
-      "\n"
-    )}\n${closingTag}`;
+    return `${openingTag}\n${content.join("\n")}\n${closingTag}`;
   };
 
   /*
@@ -555,17 +540,10 @@ function App() {
     try {
       setError("");
 
-      const parsedJson = JSON.parse(
-        jsonString
-      );
+      const parsedJson = JSON.parse(jsonString);
 
-      if (
-        parsedJson === null ||
-        typeof parsedJson !== "object"
-      ) {
-        throw new Error(
-          "JSON must contain an object or array for XML conversion."
-        );
+      if (parsedJson === null || typeof parsedJson !== "object") {
+        throw new Error("JSON must contain an object or array for XML conversion.");
       }
 
       let xml;
@@ -575,30 +553,17 @@ function App() {
          * Root-level arrays: wrap items under a default <root> element.
          */
         if (parsedJson.length === 0) {
-          throw new Error(
-            "JSON array must contain at least one item."
-          );
+          throw new Error("JSON array must contain at least one item.");
         }
 
-        const items = parsedJson
-          .map((item) =>
-            jsonValueToXml("item", item, 1)
-          )
-          .join("\n");
+        const items = parsedJson.map((item) => jsonValueToXml("item", item, 1)).join("\n");
 
-        xml =
-          `<?xml version="1.0" encoding="UTF-8"?>\n<root>\n` +
-          items +
-          `\n</root>`;
+        xml = `<?xml version="1.0" encoding="UTF-8"?>\n<root>\n` + items + `\n</root>`;
       } else {
-        const rootKeys = Object.keys(
-          parsedJson
-        );
+        const rootKeys = Object.keys(parsedJson);
 
         if (rootKeys.length === 0) {
-          throw new Error(
-            "JSON must contain at least one root element."
-          );
+          throw new Error("JSON must contain at least one root element.");
         }
 
         if (rootKeys.length === 1) {
@@ -607,45 +572,29 @@ function App() {
            */
           const rootKey = rootKeys[0];
 
-          xml =
-            `<?xml version="1.0" encoding="UTF-8"?>\n` +
-            jsonValueToXml(
-              rootKey,
-              parsedJson[rootKey]
-            );
+          xml = `<?xml version="1.0" encoding="UTF-8"?>\n` + jsonValueToXml(rootKey, parsedJson[rootKey]);
         } else {
           /*
            * Multiple top-level keys: wrap them under a default <root> element.
            */
-          xml =
-            `<?xml version="1.0" encoding="UTF-8"?>\n` +
-            jsonValueToXml("root", parsedJson);
+          xml = `<?xml version="1.0" encoding="UTF-8"?>\n` + jsonValueToXml("root", parsedJson);
         }
       }
 
       setResultData(xml);
 
-      saveToHistory(
-        jsonString,
-        xml
-      );
+      saveToHistory(jsonString, xml);
     } catch (err) {
       setResultData("");
 
-      setError(
-        err?.message ||
-          "Unable to convert JSON to XML."
-      );
+      setError(err?.message || "Unable to convert JSON to XML.");
     }
   };
 
   /*
    * Save history locally.
    */
-  const saveToHistory = (
-    input,
-    output
-  ) => {
+  const saveToHistory = (input, output) => {
     if (!input || !output) return;
 
     const item = {
@@ -656,16 +605,10 @@ function App() {
     };
 
     setHistory((previous) => {
-      const updated = [
-        item,
-        ...previous,
-      ].slice(0, 20);
+      const updated = [item, ...previous].slice(0, 20);
 
       try {
-        localStorage.setItem(
-          "json-to-xml-history",
-          JSON.stringify(updated)
-        );
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
       } catch {}
 
       return updated;
@@ -677,15 +620,10 @@ function App() {
    */
   useEffect(() => {
     try {
-      const saved =
-        localStorage.getItem(
-          "json-to-xml-history"
-        );
+      const saved = localStorage.getItem(HISTORY_STORAGE_KEY);
 
       if (saved) {
-        setHistory(
-          JSON.parse(saved)
-        );
+        setHistory(JSON.parse(saved));
       }
     } catch {}
   }, []);
@@ -695,41 +633,32 @@ function App() {
    */
   const onClickPaste = async () => {
     try {
-      const text =
-        await navigator.clipboard.readText();
+      const text = await navigator.clipboard.readText();
 
       if (text) {
         setEditorData(text);
         convertJsonToXml(text);
       }
     } catch {
-      setError(
-        "Unable to read clipboard."
-      );
+      setError("Unable to read clipboard.");
     }
   };
 
   /*
    * Upload JSON file.
    */
-  const handleFileUpload = async (
-    event
-  ) => {
-    const file =
-      event.target.files?.[0];
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
 
     if (!file) return;
 
     try {
       setError("");
 
-      const text =
-        await file.text();
+      const text = await file.text();
 
       if (!text.trim()) {
-        throw new Error(
-          "The selected JSON file is empty."
-        );
+        throw new Error("The selected JSON file is empty.");
       }
 
       setEditorData(text);
@@ -737,10 +666,7 @@ function App() {
     } catch (err) {
       setResultData("");
 
-      setError(
-        err?.message ||
-          "Unable to read the selected JSON file."
-      );
+      setError(err?.message || "Unable to read the selected JSON file.");
     }
 
     event.target.value = "";
@@ -758,38 +684,25 @@ function App() {
   /*
    * Download XML result.
    */
-  const download = (
-    filename,
-    text
-  ) => {
+  const download = (filename, text) => {
     if (!text) return;
 
-    const blob = new Blob(
-      [text],
-      {
-        type: "application/xml;charset=utf-8",
-      }
-    );
+    const blob = new Blob([text], {
+      type: "application/xml;charset=utf-8",
+    });
 
-    const url =
-      URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
 
-    const element =
-      document.createElement("a");
+    const element = document.createElement("a");
 
     element.href = url;
-    element.download =
-      filename;
+    element.download = filename;
 
-    document.body.appendChild(
-      element
-    );
+    document.body.appendChild(element);
 
     element.click();
 
-    document.body.removeChild(
-      element
-    );
+    document.body.removeChild(element);
 
     URL.revokeObjectURL(url);
   };
@@ -798,24 +711,15 @@ function App() {
    * Copy button status.
    */
   useEffect(() => {
-    if (
-      copyResButtonTitle ===
-      "Copy"
-    ) {
+    if (copyResButtonTitle === "Copy") {
       return;
     }
 
-    const timer = setTimeout(
-      () => {
-        setCopyResButtonTitle(
-          "Copy"
-        );
-      },
-      2000
-    );
+    const timer = setTimeout(() => {
+      setCopyResButtonTitle("Copy");
+    }, 2000);
 
-    return () =>
-      clearTimeout(timer);
+    return () => clearTimeout(timer);
   }, [copyResButtonTitle]);
 
   /*
@@ -828,99 +732,37 @@ function App() {
       return;
     }
 
-    const timer = setTimeout(
-      () => {
-        convertJsonToXml(
-          editorData
-        );
-      },
-      500
-    );
+    const timer = setTimeout(() => {
+      convertJsonToXml(editorData);
+    }, 500);
 
-    return () =>
-      clearTimeout(timer);
+    return () => clearTimeout(timer);
   }, [editorData]);
 
   /*
-   * Theme.
+   * Theme toggle. Themes are already defined via
+   * `beforeMount`, so this just flips which is active.
    */
   const setTheme = (isDark) => {
     if (monaco) {
-      monaco.editor.setTheme(
-        isDark
-          ? "myThemeDark"
-          : "myThemeLight"
-      );
+      monaco.editor.setTheme(isDark ? "myThemeDark" : "myThemeLight");
     }
 
     setDarkTheme(isDark);
 
     try {
-      localStorage.setItem(
-        "json-xml-theme",
-        isDark
-          ? "dark"
-          : "light"
-      );
+      localStorage.setItem(THEME_STORAGE_KEY, isDark ? "dark" : "light");
     } catch {}
   };
 
   /*
-   * Load theme.
+   * Monaco mount — themes are already defined by
+   * `beforeMount` and the correct one is already active
+   * via the `theme` prop, so this only captures instances.
    */
-  useEffect(() => {
-    try {
-      const theme =
-        localStorage.getItem(
-          "json-xml-theme"
-        );
-
-      if (theme === "dark") {
-        setDarkTheme(true);
-      }
-    } catch {}
-  }, []);
-
-  /*
-   * Monaco mount.
-   */
-  const onMountResultEditor = (
-    editorInstance,
-    monacoInstance
-  ) => {
-    monacoInstance.editor.defineTheme(
-      "myThemeDark",
-      {
-        base: "vs-dark",
-        inherit: true,
-        rules: [],
-        colors: {},
-      }
-    );
-
-    monacoInstance.editor.defineTheme(
-      "myThemeLight",
-      {
-        base: "vs",
-        inherit: true,
-        rules: [],
-        colors: {},
-      }
-    );
-
-    monacoInstance.editor.setTheme(
-      darkTheme
-        ? "myThemeDark"
-        : "myThemeLight"
-    );
-
-    setEditor(
-      editorInstance
-    );
-
-    setMonaco(
-      monacoInstance
-    );
+  const onMountResultEditor = (editorInstance, monacoInstance) => {
+    setEditor(editorInstance);
+    setMonaco(monacoInstance);
   };
 
   /*
@@ -928,59 +770,53 @@ function App() {
    */
   const findWord = () => {
     if (editor) {
-      editor
-        .getAction(
-          "actions.find"
-        )
-        ?.run();
+      editor.getAction("actions.find")?.run();
     }
   };
 
   /*
    * Restore history.
    */
-  const restoreHistory = (
-    item
-  ) => {
-    setEditorData(
-      item.input
-    );
+  const restoreHistory = (item) => {
+    setEditorData(item.input);
 
-    setResultData(
-      item.output
-    );
+    setResultData(item.output);
 
     setError("");
-    setIsHistoryOpen(
-      false
-    );
+    setIsHistoryOpen(false);
   };
 
   /*
    * Delete history item.
    */
-  const deleteHistory = (
-    id
-  ) => {
+  const deleteHistory = (id) => {
     setHistory((previous) => {
-      const updated =
-        previous.filter(
-          (item) =>
-            item.id !== id
-        );
+      const updated = previous.filter((item) => item.id !== id);
 
       try {
-        localStorage.setItem(
-          "json-to-xml-history",
-          JSON.stringify(
-            updated
-          )
-        );
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
       } catch {}
 
       return updated;
     });
   };
+
+  const activeThemeName = darkTheme ? "myThemeDark" : "myThemeLight";
+
+  /*
+   * Placeholder shown while Monaco's script/worker loads,
+   * matching the current theme's background instead of
+   * being left blank.
+   */
+  const editorLoadingPlaceholder = (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        background: darkTheme ? "#1e1e1e" : "#ffffff",
+      }}
+    />
+  );
 
   return (
     <>
@@ -995,9 +831,7 @@ function App() {
 
         <HeaderContainer>
           <div className="brand-nav">
-            <h1 className="brand-title">
-              JSON to XML Converter
-            </h1>
+            <h1 className="brand-title">JSON to XML Converter</h1>
           </div>
 
           <div
@@ -1027,20 +861,12 @@ function App() {
                   fontSize: "16px",
                   cursor: "pointer",
                 }}
-                onClick={() =>
-                  setFontSize(
-                    fontSize > 5
-                      ? fontSize - 1
-                      : 5
-                  )
-                }
+                onClick={() => setFontSize(fontSize > 5 ? fontSize - 1 : 5)}
               >
                 -
               </button>
 
-              <Button
-                title={fontSize}
-              />
+              <Button title={fontSize} />
 
               <button
                 type="button"
@@ -1052,11 +878,7 @@ function App() {
                   fontSize: "16px",
                   cursor: "pointer",
                 }}
-                onClick={() =>
-                  setFontSize(
-                    fontSize + 1
-                  )
-                }
+                onClick={() => setFontSize(fontSize + 1)}
               >
                 +
               </button>
@@ -1074,15 +896,11 @@ function App() {
             >
               <div
                 style={{
-                  color: darkTheme
-                    ? "grey"
-                    : "#FDB813",
+                  color: darkTheme ? "grey" : "#FDB813",
                   fontSize: "22px",
                   cursor: "pointer",
                 }}
-                onClick={() =>
-                  setTheme(false)
-                }
+                onClick={() => setTheme(false)}
               >
                 &#9728;
               </div>
@@ -1097,28 +915,17 @@ function App() {
                   checkedIcon={false}
                   uncheckedIcon={false}
                   height={24}
-                  onChange={
-                    setTheme
-                  }
-                  checked={
-                    darkTheme
-                  }
+                  onChange={setTheme}
+                  checked={darkTheme}
                 />
               </div>
 
               <IoMdMoon
-                color={
-                  darkTheme
-                    ? "#FDB813"
-                    : "grey"
-                }
+                color={darkTheme ? "#FDB813" : "grey"}
                 fontSize={20}
-                onClick={() =>
-                  setTheme(true)
-                }
+                onClick={() => setTheme(true)}
                 style={{
-                  cursor:
-                    "pointer",
+                  cursor: "pointer",
                 }}
               />
             </div>
@@ -1137,50 +944,33 @@ function App() {
             split="vertical"
             style={{
               height: `calc(100vh - ${
-                headerContainerHeight +
-                footerContainerHeight -
-                20
+                headerContainerHeight + footerContainerHeight - 20
               }px)`,
               width: "100%",
-              borderLeft:
-                "14px solid #adddd7",
-              borderRight:
-                "14px solid #adddd7",
-              borderBottom:
-                "14px solid #adddd7",
-              boxShadow:
-                "0 0 10px #5eead4",
+              borderLeft: "14px solid #adddd7",
+              borderRight: "14px solid #adddd7",
+              borderBottom: "14px solid #adddd7",
+              boxShadow: "0 0 10px #5eead4",
             }}
           >
             {/* JSON INPUT */}
 
             <div
               style={{
-                position:
-                  "relative",
+                position: "relative",
               }}
             >
               <Editor
+                loading={editorLoadingPlaceholder}
                 height={`calc(100vh - ${
-                  headerContainerHeight +
-                  footerContainerHeight -
-                  20
+                  headerContainerHeight + footerContainerHeight - 20
                 }px)`}
-                theme={
-                  darkTheme
-                    ? "vs-dark"
-                    : "vs"
-                }
+                theme={activeThemeName}
+                beforeMount={defineEditorThemes}
                 path="file:///json-to-xml/input.json"
-                value={
-                  editorData
-                }
-                onChange={(
-                  value
-                ) => {
-                  setEditorData(
-                    value || ""
-                  );
+                value={editorData}
+                onChange={(value) => {
+                  setEditorData(value || "");
                 }}
                 language="json"
                 options={{
@@ -1194,8 +984,7 @@ function App() {
                     handleMouseWheel: true,
                     alwaysConsumeMouseWheel: true,
                   },
-                  renderLineHighlight:
-                    "none",
+                  renderLineHighlight: "none",
                   isWholeLine: true,
                 }}
               />
@@ -1205,29 +994,20 @@ function App() {
 
             <div
               style={{
-                position:
-                  "relative",
+                position: "relative",
               }}
             >
               <Editor
+                loading={editorLoadingPlaceholder}
                 height={`calc(100vh - ${
-                  headerContainerHeight +
-                  footerContainerHeight -
-                  20
+                  headerContainerHeight + footerContainerHeight - 20
                 }px)`}
                 width="100%"
-                theme={
-                  darkTheme
-                    ? "vs-dark"
-                    : "vs"
-                }
+                theme={activeThemeName}
+                beforeMount={defineEditorThemes}
                 path="file:///json-to-xml/result.xml"
-                value={
-                  resultData || ""
-                }
-                onMount={
-                  onMountResultEditor
-                }
+                value={resultData || ""}
+                onMount={onMountResultEditor}
                 language="xml"
                 options={{
                   readOnly: false,
@@ -1241,8 +1021,7 @@ function App() {
                     handleMouseWheel: true,
                     alwaysConsumeMouseWheel: true,
                   },
-                  renderLineHighlight:
-                    "none",
+                  renderLineHighlight: "none",
                   isWholeLine: true,
                 }}
               />
@@ -1252,23 +1031,16 @@ function App() {
               {error && (
                 <div
                   style={{
-                    position:
-                      "absolute",
+                    position: "absolute",
                     left: "12px",
                     right: "12px",
                     bottom: "12px",
-                    padding:
-                      "10px 12px",
-                    background:
-                      "#fee2e2",
-                    color:
-                      "#991b1b",
-                    border:
-                      "1px solid #fecaca",
-                    borderRadius:
-                      "6px",
-                    fontSize:
-                      "13px",
+                    padding: "10px 12px",
+                    background: "#fee2e2",
+                    color: "#991b1b",
+                    border: "1px solid #fecaca",
+                    borderRadius: "6px",
+                    fontSize: "13px",
                     zIndex: 5,
                   }}
                 >
@@ -1285,32 +1057,23 @@ function App() {
           <div
             style={{
               display: "flex",
-              position:
-                "relative",
+              position: "relative",
               height: `calc(100vh - ${footerContainerHeight}px)`,
-              borderTop:
-                "1px solid darkgrey",
+              borderTop: "1px solid darkgrey",
             }}
           >
             <div
               style={{
-                display:
-                  "flex",
-                flexDirection:
-                  "column",
-                backgroundColor:
-                  "#f1f5f9",
+                display: "flex",
+                flexDirection: "column",
+                backgroundColor: "#f1f5f9",
                 width: "100%",
               }}
             >
               <ToolBar>
                 {/* PASTE */}
 
-                <ToolBtn
-                  onClick={
-                    onClickPaste
-                  }
-                >
+                <ToolBtn onClick={onClickPaste}>
                   <MdOutlineContentPaste />
                   Paste
                 </ToolBtn>
@@ -1319,33 +1082,27 @@ function App() {
 
                 <label
                   style={{
-                    display:
-                      "inline-flex",
+                    display: "inline-flex",
                   }}
                 >
                   <input
                     type="file"
                     accept=".json,application/json"
-                    onChange={
-                      handleFileUpload
-                    }
+                    onChange={handleFileUpload}
                     style={{
-                      display:
-                        "none",
+                      display: "none",
                     }}
                   />
 
                   <ToolBtn
                     as="span"
                     style={{
-                      cursor:
-                        "pointer",
+                      cursor: "pointer",
                     }}
                   >
                     <IoMdDownload
                       style={{
-                        transform:
-                          "rotate(180deg)",
+                        transform: "rotate(180deg)",
                       }}
                     />
                     Upload JSON
@@ -1354,22 +1111,14 @@ function App() {
 
                 {/* CLEAR */}
 
-                <ToolBtn
-                  onClick={clear}
-                >
+                <ToolBtn onClick={clear}>
                   <AiOutlineDelete />
                   Clear
                 </ToolBtn>
 
                 {/* HISTORY */}
 
-                <ToolBtn
-                  onClick={() =>
-                    setIsHistoryOpen(
-                      true
-                    )
-                  }
-                >
+                <ToolBtn onClick={() => setIsHistoryOpen(true)}>
                   <MdHistory />
                   History
                 </ToolBtn>
@@ -1377,15 +1126,8 @@ function App() {
                 {/* DOWNLOAD */}
 
                 <ToolBtn
-                  onClick={() =>
-                    download(
-                      "converted.xml",
-                      resultData
-                    )
-                  }
-                  disabled={
-                    !resultData
-                  }
+                  onClick={() => download("converted.xml", resultData)}
+                  disabled={!resultData}
                 >
                   <IoMdDownload />
                   Download
@@ -1395,17 +1137,11 @@ function App() {
 
                 <ToolBtn
                   onClick={() => {
-                    if (
-                      resultData
-                    ) {
-                      setEditorData(
-                        resultData
-                      );
+                    if (resultData) {
+                      setEditorData(resultData);
                     }
                   }}
-                  disabled={
-                    !resultData
-                  }
+                  disabled={!resultData}
                 >
                   <LuMoveHorizontal />
                   Paste Result
@@ -1415,15 +1151,8 @@ function App() {
                   {/* DOWNLOAD RESULT */}
 
                   <ToolBtn
-                    onClick={() =>
-                      download(
-                        "converted.xml",
-                        resultData
-                      )
-                    }
-                    disabled={
-                      !resultData
-                    }
+                    onClick={() => download("converted.xml", resultData)}
+                    disabled={!resultData}
                   >
                     <IoMdDownload />
                     Download Result
@@ -1432,25 +1161,12 @@ function App() {
                   {/* COPY */}
 
                   <CopyToClipboard
-                    text={
-                      resultData ||
-                      ""
-                    }
-                    onCopy={() =>
-                      setCopyResButtonTitle(
-                        "Copied"
-                      )
-                    }
+                    text={resultData || ""}
+                    onCopy={() => setCopyResButtonTitle("Copied")}
                   >
-                    <ToolBtn
-                      disabled={
-                        !resultData
-                      }
-                    >
+                    <ToolBtn disabled={!resultData}>
                       <IoCopyOutline />
-                      {
-                        copyResButtonTitle
-                      }
+                      {copyResButtonTitle}
                     </ToolBtn>
                   </CopyToClipboard>
 
@@ -1458,11 +1174,7 @@ function App() {
 
                   {/* SEARCH */}
 
-                  <ToolBtn
-                    onClick={
-                      findWord
-                    }
-                  >
+                  <ToolBtn onClick={findWord}>
                     <IoSearch />
                     Search
                   </ToolBtn>
@@ -1476,34 +1188,18 @@ function App() {
           <div className="menu-container">
             <div
               style={{
-                position:
-                  "absolute",
+                position: "absolute",
                 right: "10px",
                 bottom: "2px",
-                display:
-                  "flex",
-                fontSize:
-                  "10px",
+                display: "flex",
+                fontSize: "10px",
               }}
             >
-              {HOME_NAV_LINKS.map(
-                ({
-                  href,
-                  label,
-                }) => (
-                  <Link
-                    className="menu-item"
-                    href={
-                      href
-                    }
-                    key={
-                      href
-                    }
-                  >
-                    {label}
-                  </Link>
-                )
-              )}
+              {HOME_NAV_LINKS.map(({ href, label }) => (
+                <Link className="menu-item" href={href} key={href}>
+                  {label}
+                </Link>
+              ))}
             </div>
           </div>
         </BottomContainer>
@@ -1513,109 +1209,63 @@ function App() {
         {isHistoryOpen && (
           <HistoryOverlay
             role="presentation"
-            onClick={() =>
-              setIsHistoryOpen(
-                false
-              )
-            }
+            onClick={() => setIsHistoryOpen(false)}
           >
             <HistoryModal
               role="dialog"
               aria-modal="true"
-              onClick={(
-                event
-              ) =>
-                event.stopPropagation()
-              }
+              onClick={(event) => event.stopPropagation()}
             >
               <HistoryModalHeader>
-                <h2>
-                  JSON to XML Conversion History
-                </h2>
+                <h2>JSON to XML Conversion History</h2>
 
                 <button
                   type="button"
                   aria-label="Close history"
-                  onClick={() =>
-                    setIsHistoryOpen(
-                      false
-                    )
-                  }
+                  onClick={() => setIsHistoryOpen(false)}
                 >
                   <IoMdClose />
                 </button>
               </HistoryModalHeader>
 
               <HistoryCards>
-                {history.length ===
-                  0 && (
+                {history.length === 0 && (
                   <div
                     style={{
-                      color:
-                        "#94a3b8",
+                      color: "#94a3b8",
                     }}
                   >
                     No saved history
                   </div>
                 )}
 
-                {history.map(
-                  (
-                    item
-                  ) => (
-                    <HistoryCard
-                      key={
-                        item.id
-                      }
+                {history.map((item) => (
+                  <HistoryCard key={item.id}>
+                    <div
+                      className="card-content"
+                      title={item.input}
+                      onClick={() => restoreHistory(item)}
                     >
-                      <div
-                        className="card-content"
-                        title={
-                          item.input
-                        }
-                        onClick={() =>
-                          restoreHistory(
-                            item
-                          )
-                        }
-                      >
-                        <span className="timestamp">
-                          {
-                            item.time
-                          }
-                        </span>
+                      <span className="timestamp">{item.time}</span>
 
-                        <span className="preview">
-                          JSON:{" "}
-                          {item.input.substring(
-                            0,
-                            120
-                          )}
-                        </span>
+                      <span className="preview">
+                        JSON: {item.input.substring(0, 120)}
+                      </span>
 
-                        <span className="preview">
-                          XML:{" "}
-                          {item.output.substring(
-                            0,
-                            300
-                          )}
-                        </span>
-                      </div>
+                      <span className="preview">
+                        XML: {item.output.substring(0, 300)}
+                      </span>
+                    </div>
 
-                      <button
-                        className="card-delete"
-                        type="button"
-                        onClick={() =>
-                          deleteHistory(
-                            item.id
-                          )
-                        }
-                      >
-                        Delete
-                      </button>
-                    </HistoryCard>
-                  )
-                )}
+                    <button
+                      className="card-delete"
+                      type="button"
+                      onClick={() => deleteHistory(item.id)}
+                    >
+                      Delete
+                    </button>
+                  </HistoryCard>
+                ))}
               </HistoryCards>
             </HistoryModal>
           </HistoryOverlay>
@@ -1625,148 +1275,88 @@ function App() {
 
         <HomeSeoSection>
           <div className="content">
-            <h2>
-              Free Online JSON to XML Converter
-            </h2>
+            <h2>Free Online JSON to XML Converter</h2>
 
             <p>
-              JSON to XML Converter is a free
-              online tool that converts JSON data
-              into clean and properly formatted XML
-              directly in your browser.
+              JSON to XML Converter is a free online tool that converts JSON
+              data into clean and properly formatted XML directly in your
+              browser.
             </p>
 
             <p>
-              Paste JSON into the input editor or
-              upload a JSON file to instantly convert
-              JSON objects, arrays, attributes, and
-              text into XML format.
+              Paste JSON into the input editor or upload a JSON file to
+              instantly convert JSON objects, arrays, attributes, and text
+              into XML format.
             </p>
 
             <div className="link-row">
-              {HOME_NAV_LINKS.map(
-                ({
-                  href,
-                  label,
-                }) => (
-                  <Link
-                    href={href}
-                    key={href}
-                  >
-                    {label}
-                  </Link>
-                )
-              )}
+              {HOME_NAV_LINKS.map(({ href, label }) => (
+                <Link href={href} key={href}>
+                  {label}
+                </Link>
+              ))}
             </div>
 
-            <h3>
-              Why use this JSON to XML Converter?
-            </h3>
+            <h3>Why use this JSON to XML Converter?</h3>
 
             <ul>
-              <li>
-                Convert JSON to XML instantly
-                in your browser.
-              </li>
+              <li>Convert JSON to XML instantly in your browser.</li>
 
-              <li>
-                Upload JSON files directly from
-                your computer.
-              </li>
+              <li>Upload JSON files directly from your computer.</li>
 
-              <li>
-                Automatically format the
-                converted XML.
-              </li>
+              <li>Automatically format the converted XML.</li>
 
-              <li>
-                Convert JSON arrays into repeated
-                XML elements.
-              </li>
+              <li>Convert JSON arrays into repeated XML elements.</li>
 
-              <li>
-                Convert JSON attributes using
-                the @attributes property.
-              </li>
+              <li>Convert JSON attributes using the @attributes property.</li>
 
-              <li>
-                Convert JSON text using the
-                #text property.
-              </li>
+              <li>Convert JSON text using the #text property.</li>
 
-              <li>
-                Copy or download the converted
-                XML.
-              </li>
+              <li>Copy or download the converted XML.</li>
 
-              <li>
-                No server-side processing is
-                required.
-              </li>
+              <li>No server-side processing is required.</li>
             </ul>
 
-            <h3>
-              Common Questions
-            </h3>
+            <h3>Common Questions</h3>
 
-            <h4>
-              What is JSON to XML conversion?
-            </h4>
+            <h4>What is JSON to XML conversion?</h4>
 
             <p>
-              JSON to XML conversion transforms
-              structured JSON data into XML format.
-              XML is commonly used for data exchange,
-              configuration files, enterprise systems,
-              and applications that require XML-based
-              APIs.
+              JSON to XML conversion transforms structured JSON data into XML
+              format. XML is commonly used for data exchange, configuration
+              files, enterprise systems, and applications that require
+              XML-based APIs.
             </p>
 
-            <h4>
-              How do I convert JSON to XML?
-            </h4>
+            <h4>How do I convert JSON to XML?</h4>
 
             <p>
-              Paste your JSON into the input editor
-              or upload a JSON file. The converter
-              automatically parses the JSON and
-              displays the resulting XML in the
-              output editor.
+              Paste your JSON into the input editor or upload a JSON file.
+              The converter automatically parses the JSON and displays the
+              resulting XML in the output editor.
             </p>
 
-            <h4>
-              How are JSON arrays converted to XML?
-            </h4>
+            <h4>How are JSON arrays converted to XML?</h4>
 
             <p>
-              JSON arrays are converted into repeated
-              XML elements. For example, an array
-              containing multiple products can become
+              JSON arrays are converted into repeated XML elements. For
+              example, an array containing multiple products can become
               multiple product elements in the XML.
             </p>
 
-            <h4>
-              How can I create XML attributes from JSON?
-            </h4>
+            <h4>How can I create XML attributes from JSON?</h4>
 
             <p>
-              Use the{" "}
-              <strong>
-                @attributes
-              </strong>{" "}
-              property inside a JSON object. Each
-              property inside @attributes becomes an
-              XML attribute.
+              Use the <strong>@attributes</strong> property inside a JSON
+              object. Each property inside @attributes becomes an XML
+              attribute.
             </p>
 
-            <h4>
-              Is this JSON to XML converter free?
-            </h4>
+            <h4>Is this JSON to XML converter free?</h4>
 
             <p>
-              Yes. This JSON to XML converter is
-              free to use online and processes the
-              conversion directly in your browser.
+              Yes. This JSON to XML converter is free to use online and
+              processes the conversion directly in your browser.
             </p>
           </div>
         </HomeSeoSection>
