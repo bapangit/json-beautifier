@@ -27,6 +27,11 @@ const menuGroups = [
         label: "JSON Minifier",
         description: "Strip whitespace from JSON",
       },
+      // {
+      //   href: "/json-diff-checker",
+      //   label: "JSON Diff Checker",
+      //   description: "Compare two JSON documents",
+      // },
     ],
   },
   {
@@ -53,6 +58,11 @@ const menuGroups = [
         href: "/csv-to-json",
         label: "CSV to JSON",
         description: "Convert CSV into JSON",
+      },
+      {
+        href: "/json-to-java",
+        label: "JSON to Java",
+        description: "Generate Java classes from JSON",
       },
     ],
   },
@@ -421,6 +431,13 @@ export default function Menu() {
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef(null);
 
+  const openMenu = () => setIsOpen(true);
+
+  const closeMenu = () => {
+    setSearchQuery("");
+    setIsOpen(false);
+  };
+
   const filteredGroups = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -448,7 +465,7 @@ export default function Menu() {
     document.documentElement.style.overflow = "hidden";
 
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") setIsOpen(false);
+      if (event.key === "Escape") closeMenu();
     };
     document.addEventListener("keydown", handleKeyDown);
 
@@ -462,23 +479,19 @@ export default function Menu() {
     };
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) setSearchQuery("");
-  }, [isOpen]);
-
   return (
     <>
       <MenuButton
         type="button"
         aria-label="Open site navigation menu"
-        onClick={() => setIsOpen(true)}
+        onClick={openMenu}
       >
         <FaTools size={15} />
         <span>Tools</span>
       </MenuButton>
 
       {isOpen && (
-        <ModalBackdrop onClick={() => setIsOpen(false)}>
+        <ModalBackdrop onClick={closeMenu}>
           <Modal
             role="dialog"
             aria-modal="true"
@@ -490,7 +503,7 @@ export default function Menu() {
               <CloseButton
                 type="button"
                 aria-label="Close menu"
-                onClick={() => setIsOpen(false)}
+                onClick={closeMenu}
               >
                 <FiX size={17} />
               </CloseButton>
@@ -522,7 +535,7 @@ export default function Menu() {
                         <ItemRow
                           href={item.href}
                           key={item.href}
-                          onClick={() => setIsOpen(false)}
+                          onClick={closeMenu}
                         >
                           <ItemLabel>{item.label}</ItemLabel>
                           <ItemDescription>{item.description}</ItemDescription>

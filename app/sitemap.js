@@ -75,6 +75,12 @@ export default function sitemap() {
       priority: 0.9,
     },
     {
+      url: `${SITE_URL}/json-diff-checker`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
       url: `${SITE_URL}/xml-to-json`,
       lastModified: new Date(),
       changeFrequency: "weekly",
@@ -82,6 +88,12 @@ export default function sitemap() {
     },
     {
       url: `${SITE_URL}/json-to-csv`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/json-to-java`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
