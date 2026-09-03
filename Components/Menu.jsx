@@ -27,6 +27,16 @@ const menuGroups = [
         label: "JSON Minifier",
         description: "Strip whitespace from JSON",
       },
+      {
+        href: "/html-beautifier",
+        label: "HTML Beautifier",
+        description: "Pretty-print and indent HTML",
+      },
+      {
+        href: "/html-minifier",
+        label: "HTML Minifier",
+        description: "Minify and compress HTML",
+      },
       // {
       //   href: "/json-diff-checker",
       //   label: "JSON Diff Checker",

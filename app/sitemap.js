@@ -75,6 +75,18 @@ export default function sitemap() {
       priority: 0.9,
     },
     {
+      url: `${SITE_URL}/html-beautifier`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/html-minifier`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
       url: `${SITE_URL}/json-diff-checker`,
       lastModified: new Date(),
       changeFrequency: "weekly",
