@@ -15,13 +15,13 @@ export const metadata = {
     "online gzip tool",
   ],
   alternates: {
-    canonical: "/gzip-decompress",
+    canonical: "/gzip-decompressor",
   },
   openGraph: {
     title: "GZip Decompressor - Free Online Tool",
     description:
       "Decompress GZip files and data online for free. Decompress compressed GZip data instantly and view or download the original content.",
-    url: "/gzip-decompress",
+    url: "/gzip-decompressor",
     siteName: SITE_NAME,
     type: "website",
     images: [

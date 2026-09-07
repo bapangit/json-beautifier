@@ -17,13 +17,13 @@ export const metadata = {
     "brotli compression tool",
   ],
   alternates: {
-    canonical: "/brotli-decompress",
+    canonical: "/brotli-decompressor",
   },
   openGraph: {
     title: "Brotli Decompressor - Free Online Tool",
     description:
       "Decompress Brotli files and data online for free. Decompress compressed Brotli data instantly and view or download the original content.",
-    url: "/brotli-decompress",
+    url: "/brotli-decompressor",
     siteName: SITE_NAME,
     type: "website",
     images: [

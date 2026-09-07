@@ -20,7 +20,7 @@ export const metadata = {
   ],
 
   alternates: {
-    canonical: "/gzip-compress",
+    canonical: "/gzip-compressor",
   },
 
   openGraph: {
@@ -29,7 +29,7 @@ export const metadata = {
     description:
       "Compress text and data with GZip online for free. Paste or upload your content, compress it instantly, and view or download the GZip-compressed result.",
 
-    url: "/gzip-compress",
+    url: "/gzip-compressor",
 
     siteName: SITE_NAME,
 
