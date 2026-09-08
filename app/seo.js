@@ -1,5 +1,5 @@
 const rawSiteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://jsontoolpad.com";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://json-beautifier.net";
 
 export const SITE_URL = rawSiteUrl.replace(/\/+$/, "");
 export const SITE_NAME = "JSON Beautifier";
