@@ -1,7 +1,7 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
@@ -396,6 +396,7 @@ function App() {
 
   const [history, setHistory] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const skipAutoHistoryForInputRef = useRef(null);
 
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
@@ -431,7 +432,7 @@ function App() {
   /*
    * Brotli compression.
    */
-  const compressBrotli = async (text) => {
+  const compressBrotli = async (text, { shouldSaveHistory = true } = {}) => {
     if (!text || !text.trim()) {
       setResultData("");
       setError("");
@@ -463,7 +464,9 @@ function App() {
 
       setResultData(base64);
 
-      saveToHistory(text, base64);
+      if (shouldSaveHistory) {
+        saveToHistory(text, base64);
+      }
     } catch (err) {
       setResultData("");
 
@@ -516,6 +519,7 @@ function App() {
       const text = await navigator.clipboard.readText();
 
       if (text) {
+        skipAutoHistoryForInputRef.current = text;
         setEditorData(text);
         await compressBrotli(text);
       }
@@ -541,6 +545,7 @@ function App() {
         throw new Error("The selected file is empty.");
       }
 
+      skipAutoHistoryForInputRef.current = text;
       setEditorData(text);
 
       await compressBrotli(text);
@@ -614,7 +619,12 @@ function App() {
     }
 
     const timer = setTimeout(() => {
-      compressBrotli(editorData);
+      const shouldSaveHistory =
+        skipAutoHistoryForInputRef.current !== editorData;
+
+      skipAutoHistoryForInputRef.current = null;
+
+      compressBrotli(editorData, { shouldSaveHistory });
     }, 500);
 
     return () => clearTimeout(timer);

@@ -1,7 +1,7 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
@@ -394,6 +394,7 @@ function App() {
 
   const [history, setHistory] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const skipAutoHistoryForInputRef = useRef(null);
 
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
@@ -487,7 +488,7 @@ function App() {
   /*
    * Convert XML string into formatted JSON.
    */
-  const convertXmlToJson = (xmlString) => {
+  const convertXmlToJson = (xmlString, { shouldSaveHistory = true } = {}) => {
     if (!xmlString || !xmlString.trim()) {
       setResultData("");
       setError("");
@@ -527,7 +528,9 @@ function App() {
 
       setResultData(formattedJson);
 
-      saveToHistory(xmlString, formattedJson);
+      if (shouldSaveHistory) {
+        saveToHistory(xmlString, formattedJson);
+      }
     } catch (err) {
       setResultData("");
 
@@ -580,6 +583,7 @@ function App() {
       const text = await navigator.clipboard.readText();
 
       if (text) {
+        skipAutoHistoryForInputRef.current = text;
         setEditorData(text);
         convertXmlToJson(text);
       }
@@ -605,6 +609,7 @@ function App() {
         throw new Error("The selected XML file is empty.");
       }
 
+      skipAutoHistoryForInputRef.current = text;
       setEditorData(text);
       convertXmlToJson(text);
     } catch (err) {
@@ -675,7 +680,12 @@ function App() {
     }
 
     const timer = setTimeout(() => {
-      convertXmlToJson(editorData);
+      const shouldSaveHistory =
+        skipAutoHistoryForInputRef.current !== editorData;
+
+      skipAutoHistoryForInputRef.current = null;
+
+      convertXmlToJson(editorData, { shouldSaveHistory });
     }, 500);
 
     return () => clearTimeout(timer);

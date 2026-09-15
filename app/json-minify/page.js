@@ -1,7 +1,7 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
@@ -394,6 +394,7 @@ function App() {
 
   const [history, setHistory] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const skipAutoHistoryForInputRef = useRef(null);
 
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
@@ -416,7 +417,7 @@ function App() {
    * JSON.stringify without spacing removes
    * unnecessary whitespace.
    */
-  const minifyJson = (jsonString) => {
+  const minifyJson = (jsonString, { shouldSaveHistory = true } = {}) => {
     if (!jsonString || !jsonString.trim()) {
       setResultData("");
       setError("");
@@ -432,7 +433,9 @@ function App() {
 
       setResultData(minifiedJson);
 
-      saveToHistory(jsonString, minifiedJson);
+      if (shouldSaveHistory) {
+        saveToHistory(jsonString, minifiedJson);
+      }
     } catch (err) {
       setResultData("");
 
@@ -485,6 +488,7 @@ function App() {
       const text = await navigator.clipboard.readText();
 
       if (text) {
+        skipAutoHistoryForInputRef.current = text;
         setEditorData(text);
         minifyJson(text);
       }
@@ -510,6 +514,7 @@ function App() {
         throw new Error("The selected JSON file is empty.");
       }
 
+      skipAutoHistoryForInputRef.current = text;
       setEditorData(text);
       minifyJson(text);
     } catch (err) {
@@ -582,7 +587,12 @@ function App() {
     }
 
     const timer = setTimeout(() => {
-      minifyJson(editorData);
+      const shouldSaveHistory =
+        skipAutoHistoryForInputRef.current !== editorData;
+
+      skipAutoHistoryForInputRef.current = null;
+
+      minifyJson(editorData, { shouldSaveHistory });
     }, 500);
 
     return () => clearTimeout(timer);

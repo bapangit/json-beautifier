@@ -1,7 +1,7 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
@@ -414,6 +414,7 @@ function App() {
 
   const [history, setHistory] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const skipAutoHistoryForInputRef = useRef(null);
 
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
@@ -453,7 +454,7 @@ function App() {
   /*
    * Compress text using browser-native GZip.
    */
-  const gzipCompress = async (text) => {
+  const gzipCompress = async (text, { shouldSaveHistory = true } = {}) => {
     if (!text || !text.trim()) {
       setResultData("");
       setError("");
@@ -494,7 +495,9 @@ function App() {
 
       setCompressionRatio(Math.max(0, ratio));
 
-      saveToHistory(text, base64);
+      if (shouldSaveHistory) {
+        saveToHistory(text, base64);
+      }
     } catch (err) {
       setResultData("");
       setOriginalSize(0);
@@ -550,6 +553,7 @@ function App() {
       const text = await navigator.clipboard.readText();
 
       if (text) {
+        skipAutoHistoryForInputRef.current = text;
         setEditorData(text);
         await gzipCompress(text);
       }
@@ -575,6 +579,7 @@ function App() {
         throw new Error("The selected file is empty.");
       }
 
+      skipAutoHistoryForInputRef.current = text;
       setEditorData(text);
 
       await gzipCompress(text);
@@ -692,7 +697,12 @@ function App() {
     }
 
     const timer = setTimeout(() => {
-      gzipCompress(editorData);
+      const shouldSaveHistory =
+        skipAutoHistoryForInputRef.current !== editorData;
+
+      skipAutoHistoryForInputRef.current = null;
+
+      gzipCompress(editorData, { shouldSaveHistory });
     }, 500);
 
     return () => clearTimeout(timer);

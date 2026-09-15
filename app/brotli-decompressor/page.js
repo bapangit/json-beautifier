@@ -1,7 +1,7 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
@@ -396,6 +396,7 @@ function App() {
 
   const [history, setHistory] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const skipAutoHistoryForInputRef = useRef(null);
 
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
@@ -429,7 +430,10 @@ function App() {
    *
    * The input is expected to be Base64 encoded Brotli data.
    */
-  const decompressBrotli = async (base64Data) => {
+  const decompressBrotli = async (
+    base64Data,
+    { shouldSaveHistory = true } = {},
+  ) => {
     if (!base64Data || !base64Data.trim()) {
       setResultData("");
       setError("");
@@ -475,7 +479,9 @@ function App() {
 
       setResultData(text);
 
-      saveToHistory(base64Data, text);
+      if (shouldSaveHistory) {
+        saveToHistory(base64Data, text);
+      }
     } catch (err) {
       setResultData("");
 
@@ -531,6 +537,7 @@ function App() {
       const text = await navigator.clipboard.readText();
 
       if (text) {
+        skipAutoHistoryForInputRef.current = text;
         setEditorData(text);
         await decompressBrotli(text);
       }
@@ -569,6 +576,7 @@ function App() {
 
       const base64 = window.btoa(binary);
 
+      skipAutoHistoryForInputRef.current = base64;
       setEditorData(base64);
 
       await decompressBrotli(base64);
@@ -642,7 +650,12 @@ function App() {
     }
 
     const timer = setTimeout(() => {
-      decompressBrotli(editorData);
+      const shouldSaveHistory =
+        skipAutoHistoryForInputRef.current !== editorData;
+
+      skipAutoHistoryForInputRef.current = null;
+
+      decompressBrotli(editorData, { shouldSaveHistory });
     }, 500);
 
     return () => clearTimeout(timer);

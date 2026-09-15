@@ -1,7 +1,7 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
@@ -522,6 +522,7 @@ function App() {
 
   const [history, setHistory] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const skipAutoHistoryForInputRef = useRef(null);
 
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
@@ -548,7 +549,7 @@ function App() {
    * tag check is done so obviously broken markup still surfaces
    * an error instead of silently producing garbled output.
    */
-  const beautifyHtml = (htmlString) => {
+  const beautifyHtml = (htmlString, { shouldSaveHistory = true } = {}) => {
     if (!htmlString || !htmlString.trim()) {
       setResultData("");
       setError("");
@@ -590,7 +591,9 @@ function App() {
 
       setResultData(beautifiedHtml);
 
-      saveToHistory(htmlString, beautifiedHtml);
+      if (shouldSaveHistory) {
+        saveToHistory(htmlString, beautifiedHtml);
+      }
     } catch (err) {
       setResultData("");
 
@@ -643,6 +646,7 @@ function App() {
       const text = await navigator.clipboard.readText();
 
       if (text) {
+        skipAutoHistoryForInputRef.current = text;
         setEditorData(text);
         beautifyHtml(text);
       }
@@ -668,6 +672,7 @@ function App() {
         throw new Error("The selected HTML file is empty.");
       }
 
+      skipAutoHistoryForInputRef.current = text;
       setEditorData(text);
       beautifyHtml(text);
     } catch (err) {
@@ -740,7 +745,12 @@ function App() {
     }
 
     const timer = setTimeout(() => {
-      beautifyHtml(editorData);
+      const shouldSaveHistory =
+        skipAutoHistoryForInputRef.current !== editorData;
+
+      skipAutoHistoryForInputRef.current = null;
+
+      beautifyHtml(editorData, { shouldSaveHistory });
     }, 500);
 
     return () => clearTimeout(timer);

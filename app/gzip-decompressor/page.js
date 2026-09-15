@@ -1,7 +1,7 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
@@ -394,6 +394,7 @@ function App() {
 
   const [history, setHistory] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const skipAutoHistoryForInputRef = useRef(null);
 
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
@@ -433,7 +434,7 @@ function App() {
    * Decompress GZip using the browser's native
    * DecompressionStream API.
    */
-  const decompressGzip = async (input) => {
+  const decompressGzip = async (input, { shouldSaveHistory = true } = {}) => {
     if (!input || !input.trim()) {
       setResultData("");
       setError("");
@@ -469,7 +470,9 @@ function App() {
 
       setResultData(text);
 
-      saveToHistory(input, text);
+      if (shouldSaveHistory) {
+        saveToHistory(input, text);
+      }
     } catch (err) {
       setResultData("");
       setError(err?.message || "Unable to decompress the GZip data.");
@@ -564,6 +567,7 @@ function App() {
       const text = await navigator.clipboard.readText();
 
       if (text) {
+        skipAutoHistoryForInputRef.current = text;
         setEditorData(text);
         decompressGzip(text);
       }
@@ -627,7 +631,12 @@ function App() {
     }
 
     const timer = setTimeout(() => {
-      decompressGzip(editorData);
+      const shouldSaveHistory =
+        skipAutoHistoryForInputRef.current !== editorData;
+
+      skipAutoHistoryForInputRef.current = null;
+
+      decompressGzip(editorData, { shouldSaveHistory });
     }, 500);
 
     return () => clearTimeout(timer);

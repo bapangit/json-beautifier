@@ -1,7 +1,7 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
@@ -394,6 +394,7 @@ function App() {
 
   const [history, setHistory] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const skipAutoHistoryForInputRef = useRef(null);
 
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
@@ -524,7 +525,7 @@ function App() {
   /*
    * Convert CSV to JSON.
    */
-  const convertCsvToJson = (csvString) => {
+  const convertCsvToJson = (csvString, { shouldSaveHistory = true } = {}) => {
     if (!csvString || !csvString.trim()) {
       setResultData("");
       setError("");
@@ -572,7 +573,9 @@ function App() {
 
       setResultData(json);
 
-      saveToHistory(csvString, json);
+      if (shouldSaveHistory) {
+        saveToHistory(csvString, json);
+      }
     } catch (err) {
       setResultData("");
 
@@ -625,6 +628,7 @@ function App() {
       const text = await navigator.clipboard.readText();
 
       if (text) {
+        skipAutoHistoryForInputRef.current = text;
         setEditorData(text);
         convertCsvToJson(text);
       }
@@ -650,6 +654,7 @@ function App() {
         throw new Error("The selected CSV file is empty.");
       }
 
+      skipAutoHistoryForInputRef.current = text;
       setEditorData(text);
       convertCsvToJson(text);
     } catch (err) {
@@ -722,7 +727,12 @@ function App() {
     }
 
     const timer = setTimeout(() => {
-      convertCsvToJson(editorData);
+      const shouldSaveHistory =
+        skipAutoHistoryForInputRef.current !== editorData;
+
+      skipAutoHistoryForInputRef.current = null;
+
+      convertCsvToJson(editorData, { shouldSaveHistory });
     }, 500);
 
     return () => clearTimeout(timer);

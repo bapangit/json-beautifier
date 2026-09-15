@@ -1,7 +1,7 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { styled } from "styled-components";
 import SplitPane from "react-split-pane";
 import Switch from "react-switch";
@@ -753,6 +753,7 @@ function App() {
 
   const [history, setHistory] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const skipAutoHistoryForInputRef = useRef(null);
 
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
@@ -774,7 +775,11 @@ function App() {
    * and empty-input handling, so it can be called directly
    * from event handlers and effects.
    */
-  const runConversion = (jsonString, requestedClassName) => {
+  const runConversion = (
+    jsonString,
+    requestedClassName,
+    { shouldSaveHistory = true } = {},
+  ) => {
     if (!jsonString || !jsonString.trim()) {
       setResultData("");
       setError("");
@@ -788,7 +793,9 @@ function App() {
 
       setResultData(javaSource);
 
-      saveToHistory(jsonString, javaSource);
+      if (shouldSaveHistory) {
+        saveToHistory(jsonString, javaSource);
+      }
     } catch (err) {
       setResultData("");
 
@@ -841,6 +848,10 @@ function App() {
       const text = await navigator.clipboard.readText();
 
       if (text) {
+        skipAutoHistoryForInputRef.current = {
+          className,
+          input: text,
+        };
         setEditorData(text);
         runConversion(text, className);
       }
@@ -866,6 +877,10 @@ function App() {
         throw new Error("The selected JSON file is empty.");
       }
 
+      skipAutoHistoryForInputRef.current = {
+        className,
+        input: text,
+      };
       setEditorData(text);
       runConversion(text, className);
     } catch (err) {
@@ -939,7 +954,15 @@ function App() {
     }
 
     const timer = setTimeout(() => {
-      runConversion(editorData, className);
+      const skipAutoHistoryForInput = skipAutoHistoryForInputRef.current;
+      const shouldSaveHistory =
+        !skipAutoHistoryForInput ||
+        skipAutoHistoryForInput.input !== editorData ||
+        skipAutoHistoryForInput.className !== className;
+
+      skipAutoHistoryForInputRef.current = null;
+
+      runConversion(editorData, className, { shouldSaveHistory });
     }, 500);
 
     return () => clearTimeout(timer);
