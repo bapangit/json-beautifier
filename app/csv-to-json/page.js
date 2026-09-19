@@ -820,6 +820,7 @@ function App() {
   return (
     <>
       <main
+        className={darkTheme ? "dark-mode" : "light-mode"}
         style={{
           minHeight: "100vh",
           width: "100%",

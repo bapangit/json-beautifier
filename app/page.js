@@ -73,9 +73,9 @@ const HeaderContainer = styled.div`
   justify-content: space-between;
   gap: 20px;
   align-items: center;
-  border-bottom: 1px solid #94a3b8;
-  background-color: #e8f3f2;
-  color: #12343b;
+  border-bottom: 1px solid var(--page-border-strong);
+  background-color: var(--page-surface-muted);
+  color: var(--page-text);
   z-index: 100;
 
   .brand-nav {
@@ -89,7 +89,7 @@ const HeaderContainer = styled.div`
     margin: 0;
     font-size: 24px;
     font-weight: 500;
-    color: #0f766e;
+    color: #0f9d78;
     white-space: nowrap;
   }
 
@@ -115,8 +115,8 @@ const HeaderContainer = styled.div`
 
 const HomeSeoSection = styled.section`
   padding: 28px 18px 48px;
-  background: white;
-  color: #111827;
+  background: var(--page-surface);
+  color: var(--page-text);
 
   .content {
     max-width: 960px;
@@ -162,8 +162,8 @@ const HomeSeoSection = styled.section`
     justify-content: center;
     padding: 10px 14px;
     border-radius: 8px;
-    background: #0f172a;
-    color: #ffffff;
+    background: var(--page-text);
+    color: var(--page-background);
     text-decoration: none;
     font-weight: 600;
     transition: opacity 0.2s ease;
@@ -174,7 +174,7 @@ const HomeSeoSection = styled.section`
   }
 
   a {
-    color: #0f4c81;
+    color: #0f9d78;
   }
 `;
 
@@ -188,13 +188,13 @@ const BottomContainer = styled.div`
   height: ${footerContainerHeight}px;
   display: flex;
   flex-direction: column;
-  background-color: #f1f5f9;
+  background-color: var(--page-surface-muted);
   z-index: 100;
 
   .menu-container {
     position: relative;
     height: 14px;
-    color: #12343b;
+    color: var(--page-text);
   }
 
   .menu-item {
@@ -203,7 +203,7 @@ const BottomContainer = styled.div`
     height: 15px;
     padding: 0px 4px;
     cursor: pointer;
-    color: #12343b;
+    color: var(--page-text);
     text-decoration: none;
 
     &:hover {
@@ -216,7 +216,7 @@ const ToolBar = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #ffffff;
+  background: var(--page-surface);
   padding: 10px 12px;
   border-radius: 10px;
   flex-wrap: wrap;
@@ -228,9 +228,9 @@ const ToolBtn = styled.button`
   gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
-  border: 1px solid ${(p) => (p.$primary ? "#0f9d78" : "#e2e8f0")};
-  background: ${(p) => (p.$primary ? "#0f9d78" : "#ffffff")};
-  color: ${(p) => (p.$primary ? "#ffffff" : "#334155")};
+  border: 1px solid ${(p) => (p.$primary ? "#0f9d78" : "var(--page-border)")};
+  background: ${(p) => (p.$primary ? "#0f9d78" : "var(--page-surface)")};
+  color: ${(p) => (p.$primary ? "#ffffff" : "var(--page-button-text)")};
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -240,8 +240,8 @@ const ToolBtn = styled.button`
     border-color 0.15s ease;
 
   &:hover {
-    background: ${(p) => (p.$primary ? "#0c8a67" : "#f1f5f9")};
-    border-color: ${(p) => (p.$primary ? "#0c8a67" : "#cbd5e1")};
+    background: ${(p) => (p.$primary ? "#0c8a67" : "var(--page-surface-muted)")};
+    border-color: ${(p) => (p.$primary ? "#0c8a67" : "var(--page-border-strong)")};
   }
 
   &:active {
@@ -261,7 +261,7 @@ const ToolBtn = styled.button`
 const ToolDivider = styled.div`
   width: 1px;
   height: 22px;
-  background: #e2e8f0;
+  background: var(--page-border);
   margin: 0 4px;
 `;
 
@@ -284,16 +284,16 @@ const HistoryOverlay = styled.div`
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(15, 38, 48, 0.6);
+  background: rgba(15, 23, 32, 0.7);
 `;
 
 const HistoryModal = styled.div`
   width: min(760px, 100%);
   max-height: min(620px, 90vh);
   overflow: hidden;
-  border: 1px solid #adddd7;
+  border: 1px solid var(--page-border-strong);
   border-radius: 12px;
-  background: #f8fbfb;
+  background: var(--page-surface-raised);
   box-shadow: 0 14px 40px rgba(15, 38, 48, 0.3);
 `;
 
@@ -302,8 +302,8 @@ const HistoryModalHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #dbe5e9;
-  color: #12343b;
+  border-bottom: 1px solid var(--page-border);
+  color: var(--page-text);
 
   h2 {
     margin: 0;
@@ -313,7 +313,7 @@ const HistoryModalHeader = styled.div`
   button {
     border: 0;
     background: transparent;
-    color: #12343b;
+    color: var(--page-text);
     font-size: 24px;
     cursor: pointer;
   }
@@ -334,8 +334,8 @@ const HistoryCard = styled.div`
   height: 260px;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #dbe5e9;
-  background: #ffffff;
+  border: 1px solid var(--page-border);
+  background: var(--page-surface);
   box-shadow: 0 2px 8px rgba(36, 55, 70, 0.08);
 
   .card-content {
@@ -349,7 +349,7 @@ const HistoryCard = styled.div`
   .timestamp {
     display: block;
     overflow: hidden;
-    color: #12343b;
+    color: var(--page-text);
     font-size: 14px;
     font-weight: 600;
     text-overflow: ellipsis;
@@ -360,7 +360,7 @@ const HistoryCard = styled.div`
     display: block;
     overflow: hidden;
     margin-top: 6px;
-    color: #64748b;
+    color: var(--page-text-muted);
     font-size: 12px;
     line-height: 1.45;
     text-overflow: ellipsis;
@@ -374,9 +374,9 @@ const HistoryCard = styled.div`
     width: 100%;
     padding: 8px 12px;
     border: 0;
-    border-top: 1px solid #dbe5e9;
-    background: #f8fbfb;
-    color: #963d32;
+    border-top: 1px solid var(--page-border);
+    background: var(--page-surface-raised);
+    color: #dc6b5d;
     cursor: pointer;
   }
 `;
@@ -687,6 +687,7 @@ function App() {
   return (
     <>
       <main
+        className={darkTheme ? "dark-mode" : "light-mode"}
         style={{
           minHeight: "100vh",
           width: "100%",
@@ -714,7 +715,7 @@ function App() {
                 display: "flex",
                 alignItems: "center",
                 gap: "5px",
-                color: "#12343b",
+                color: "var(--page-text)",
               }}
             >
               <button
@@ -813,9 +814,9 @@ function App() {
                 headerContainerHeight + footerContainerHeight - 20
               }px)`,
               width: "100%",
-              borderLeft: "14px solid #adddd7",
-              borderRight: "14px solid #adddd7",
-              borderBottom: "14px solid #adddd7",
+              borderLeft: "14px solid var(--page-border-strong)",
+              borderRight: "14px solid var(--page-border-strong)",
+              borderBottom: "14px solid var(--page-border-strong)",
               boxShadow: "0 0 10px #5eead4",
             }}
           >
@@ -902,9 +903,9 @@ function App() {
                     right: "12px",
                     bottom: "12px",
                     padding: "10px 12px",
-                    background: "#fee2e2",
-                    color: "#991b1b",
-                    border: "1px solid #fecaca",
+                    background: "var(--page-error-background)",
+                    color: "var(--page-error-text)",
+                    border: "1px solid var(--page-error-border)",
                     borderRadius: "6px",
                     fontSize: "13px",
                     zIndex: 5,
@@ -925,14 +926,14 @@ function App() {
               display: "flex",
               position: "relative",
               height: `calc(100vh - ${footerContainerHeight}px)`,
-              borderTop: "1px solid darkgrey",
+              borderTop: "1px solid var(--page-border)",
             }}
           >
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
-                backgroundColor: "#f1f5f9",
+                backgroundColor: "var(--page-surface-muted)",
                 width: "100%",
               }}
             >
@@ -1098,7 +1099,7 @@ function App() {
                 {history.length === 0 && (
                   <div
                     style={{
-                      color: "#94a3b8",
+                      color: "var(--page-text-muted)",
                     }}
                   >
                     No saved history

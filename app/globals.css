@@ -49,6 +49,102 @@ main {
   min-height: 100vh;
 }
 
+main.light-mode {
+  --page-background: #e2e8f0;
+  --page-surface: #ffffff;
+  --page-surface-muted: #f1f5f9;
+  --page-surface-raised: #f8fbfb;
+  --page-text: #12343b;
+  --page-text-muted: #64748b;
+  --page-border: #dbe5e9;
+  --page-border-strong: #adddd7;
+  --page-button-text: #334155;
+  --page-error-background: #fee2e2;
+  --page-error-text: #991b1b;
+  --page-error-border: #fecaca;
+}
+
+main.dark-mode {
+  --page-background: #0f1720;
+  --page-surface: #1e2935;
+  --page-surface-muted: #17212b;
+  --page-surface-raised: #24313d;
+  --page-text: #e2e8f0;
+  --page-text-muted: #94a3b8;
+  --page-border: #334155;
+  --page-border-strong: #475569;
+  --page-button-text: #e2e8f0;
+  --page-error-background: #451a1a;
+  --page-error-text: #fecaca;
+  --page-error-border: #7f1d1d;
+  background: var(--page-background);
+}
+
+main.dark-mode > div:first-child,
+main.dark-mode > div:nth-child(3),
+main.dark-mode > section {
+  background-color: var(--page-surface-muted) !important;
+  color: var(--page-text) !important;
+}
+
+main.dark-mode > div:nth-child(2) > div > div,
+main.dark-mode > div:nth-child(3) > div > div {
+  background-color: var(--page-surface-muted) !important;
+}
+
+main.dark-mode > div:first-child h1,
+main.dark-mode > div:first-child button,
+main.dark-mode > div:nth-child(3) button,
+main.dark-mode > div:nth-child(3) .menu-item,
+main.dark-mode > div:nth-child(3) label > span,
+main.dark-mode > section h1,
+main.dark-mode > section h2,
+main.dark-mode > section h3,
+main.dark-mode > section h4,
+main.dark-mode > section p,
+main.dark-mode > section li,
+main.dark-mode > section a {
+  color: var(--page-text) !important;
+}
+
+main.dark-mode > div:first-child button {
+  background: var(--page-surface) !important;
+  border-color: var(--page-border) !important;
+}
+
+main.dark-mode > div:nth-child(3) > div > div,
+main.dark-mode > div:nth-child(3) button,
+main.dark-mode > div:nth-child(3) label > span {
+  background: var(--page-surface) !important;
+  border-color: var(--page-border) !important;
+}
+
+main.dark-mode > div:nth-child(3) > div > div > div {
+  background: var(--page-surface) !important;
+  border-color: var(--page-border) !important;
+}
+
+main.dark-mode > div:nth-child(2) > div {
+  border-color: var(--page-border-strong) !important;
+}
+
+main.dark-mode [role="dialog"] {
+  background: var(--page-surface-raised) !important;
+  border-color: var(--page-border-strong) !important;
+  color: var(--page-text) !important;
+}
+
+main.dark-mode [role="dialog"] div,
+main.dark-mode [role="dialog"] button,
+main.dark-mode [role="dialog"] span {
+  color: var(--page-text) !important;
+}
+
+main.dark-mode [role="dialog"] div {
+  background-color: var(--page-surface) !important;
+  border-color: var(--page-border) !important;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
