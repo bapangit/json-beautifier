@@ -145,6 +145,10 @@ main.dark-mode [role="dialog"] div {
   border-color: var(--page-border) !important;
 }
 
+main > div:first-child > div > div:first-child > button {
+  margin: 0 4px;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
