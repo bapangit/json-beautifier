@@ -147,6 +147,51 @@ main.dark-mode [role="dialog"] div {
 
 main > div:first-child > div > div:first-child > button {
   margin: 0 4px;
+  appearance: none;
+  border: 1px solid var(--page-border) !important;
+  border-radius: 8px;
+  background: var(--page-surface) !important;
+  color: var(--page-button-text) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.14);
+  font-weight: 600;
+  line-height: 1;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+main > div:first-child > div > div:first-child > button:hover {
+  background: var(--page-surface-muted) !important;
+  border-color: var(--page-border-strong) !important;
+  transform: translateY(-1px);
+}
+
+main > div:first-child > div > div:first-child > button:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
+}
+
+main > div:first-child > div > div:first-child > button:active {
+  transform: scale(0.96);
+}
+
+main.dark-mode > div:first-child > div > div:first-child > button {
+  border-color: #475569 !important;
+  background: #1e2935 !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+main.dark-mode > div:first-child > div > div:first-child > button:hover {
+  border-color: #2dd4bf !important;
+  background: #0f766e !important;
+  color: #f8fafc !important;
+}
+
+main.dark-mode > div:first-child > div > div:first-child > button:focus-visible {
+  outline-color: #5eead4;
 }
 
 * {
