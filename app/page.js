@@ -162,8 +162,8 @@ const HomeSeoSection = styled.section`
     justify-content: center;
     padding: 10px 14px;
     border-radius: 8px;
-    background: var(--page-text);
-    color: var(--page-background);
+    background: var(--page-background);
+    color: var(--page-text);
     text-decoration: none;
     font-weight: 600;
     transition: opacity 0.2s ease;
