@@ -399,6 +399,7 @@ function App() {
   const [history, setHistory] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const skipAutoHistoryForInputRef = useRef(null);
+  const adSlotRef = useRef(null);
 
   const [editor, setEditor] = useState(null);
   const [monaco, setMonaco] = useState(null);
@@ -483,6 +484,25 @@ function App() {
         setHistory(JSON.parse(saved));
       }
     } catch {}
+  }, []);
+
+  useEffect(() => {
+    const adSlot = adSlotRef.current;
+    if (!adSlot || adSlot.querySelector("script")) return;
+
+    window.atOptions = {
+      key: "2db6ee07c7be4083ba30310ce6386037",
+      format: "iframe",
+      height: 50,
+      width: 320,
+      params: {},
+    };
+
+    const script = document.createElement("script");
+    script.src =
+      "https://www.highrevenueformat.com/2db6ee07c7be4083ba30310ce6386037/invoke.js";
+    script.async = true;
+    adSlot.appendChild(script);
   }, []);
 
   /*
@@ -1013,6 +1033,16 @@ function App() {
                   <LuMoveHorizontal />
                   Paste Result
                 </ToolBtn>
+
+                <div
+                  ref={adSlotRef}
+                  style={{
+                    width: 320,
+                    height: 50,
+                    flex: "0 0 320px",
+                    overflow: "hidden",
+                  }}
+                />
 
                 <ToolRight>
                   {/* DOWNLOAD RESULT */}
