@@ -486,24 +486,24 @@ function App() {
     } catch {}
   }, []);
 
-  useEffect(() => {
-    const adSlot = adSlotRef.current;
-    if (!adSlot || adSlot.querySelector("script")) return;
+  // useEffect(() => {
+  //   const adSlot = adSlotRef.current;
+  //   if (!adSlot || adSlot.querySelector("script")) return;
 
-    window.atOptions = {
-      key: "2db6ee07c7be4083ba30310ce6386037",
-      format: "iframe",
-      height: 50,
-      width: 320,
-      params: {},
-    };
+  //   window.atOptions = {
+  //     key: "2db6ee07c7be4083ba30310ce6386037",
+  //     format: "iframe",
+  //     height: 50,
+  //     width: 320,
+  //     params: {},
+  //   };
 
-    const script = document.createElement("script");
-    script.src =
-      "https://www.highrevenueformat.com/2db6ee07c7be4083ba30310ce6386037/invoke.js";
-    script.async = true;
-    adSlot.appendChild(script);
-  }, []);
+  //   const script = document.createElement("script");
+  //   script.src =
+  //     "https://www.highrevenueformat.com/2db6ee07c7be4083ba30310ce6386037/invoke.js";
+  //   script.async = true;
+  //   adSlot.appendChild(script);
+  // }, []);
 
   /*
    * Paste JSON.
@@ -1034,7 +1034,7 @@ function App() {
                   Paste Result
                 </ToolBtn>
 
-                <div
+                {/*<div
                   ref={adSlotRef}
                   style={{
                     width: 320,
@@ -1042,7 +1042,7 @@ function App() {
                     flex: "0 0 320px",
                     overflow: "hidden",
                   }}
-                />
+                />*/}
 
                 <ToolRight>
                   {/* DOWNLOAD RESULT */}
