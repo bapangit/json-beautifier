@@ -276,6 +276,17 @@ const ToolRight = styled.div`
   }
 `;
 
+const SharePrompt = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px 0;
+  color: var(--page-text-muted);
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.5;
+`;
+
 const HistoryOverlay = styled.div`
   position: fixed;
   inset: 0;
@@ -1077,6 +1088,10 @@ function App() {
                   </ToolBtn>
                 </ToolRight>
               </ToolBar>
+
+              <SharePrompt>
+                Enjoying this site? Help us keep it running by sharing it with your friends!
+              </SharePrompt>
             </div>
           </div>
 
